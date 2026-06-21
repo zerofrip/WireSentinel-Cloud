@@ -1,0 +1,31 @@
+[package]
+name = "cloud-storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+chrono.workspace = true
+database = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["fs", "io-util"] }
+uuid.workspace = true
+
+[features]
+default = []
+s3 = ["dep:reqwest"]
+azure = []
+
+[dependencies.reqwest]
+workspace = true
+optional = true
+
+[dev-dependencies]
+uuid = { workspace = true }
+tokio = { workspace = true }
