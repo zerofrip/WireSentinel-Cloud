@@ -1,4 +1,4 @@
--- Phase 14-D: hosted controllers and provisioning jobs
+-- Hosted controllers and provisioning jobs
 
 CREATE TABLE IF NOT EXISTS provisioning_jobs (
     id TEXT PRIMARY KEY NOT NULL,

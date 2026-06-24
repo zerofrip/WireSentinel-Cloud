@@ -131,14 +131,15 @@ impl TenantAiPolicyService {
     ) -> Result<AiInvestigationPolicyRecord, DbError> {
         let id = Uuid::new_v4().to_string();
         let now = now_iso();
-        let title = req.title.unwrap_or_else(|| "AI security investigation".into());
+        let title = req
+            .title
+            .unwrap_or_else(|| "AI security investigation".into());
         let status = req.status.unwrap_or_else(|| "open".into());
         let severity = req.severity.unwrap_or_else(|| "medium".into());
         let category = req.category.unwrap_or_else(|| "general".into());
         let finding_count = req.finding_count.unwrap_or(0);
-        let content_json =
-            serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
-                .unwrap_or_else(|_| "{}".into());
+        let content_json = serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
+            .unwrap_or_else(|_| "{}".into());
 
         sqlx::query(
             "INSERT INTO tenant_ai_investigations (

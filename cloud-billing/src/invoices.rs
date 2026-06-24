@@ -107,7 +107,11 @@ impl InvoiceManager {
         })
     }
 
-    pub async fn mark_paid(&self, invoice_id: &str, stripe_invoice_id: Option<&str>) -> Result<(), DbError> {
+    pub async fn mark_paid(
+        &self,
+        invoice_id: &str,
+        stripe_invoice_id: Option<&str>,
+    ) -> Result<(), DbError> {
         sqlx::query(
             "UPDATE invoices SET status = 'paid', stripe_invoice_id = COALESCE(?, stripe_invoice_id) WHERE id = ?",
         )

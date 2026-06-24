@@ -164,7 +164,16 @@ impl FederationManager {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, name, endpoint_url, status, last_sync_at, last_health_at, created_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    name,
+                    endpoint_url,
+                    status,
+                    last_sync_at,
+                    last_health_at,
+                    created_at,
+                )| {
                     FederatedController {
                         id,
                         tenant_id,
@@ -219,14 +228,12 @@ impl FederationManager {
         };
 
         let status = if healthy { "active" } else { "unhealthy" };
-        sqlx::query(
-            "UPDATE federated_controllers SET last_health_at = ?, status = ? WHERE id = ?",
-        )
-        .bind(&checked_at)
-        .bind(status)
-        .bind(controller_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE federated_controllers SET last_health_at = ?, status = ? WHERE id = ?")
+            .bind(&checked_at)
+            .bind(status)
+            .bind(controller_id)
+            .execute(&self.pool)
+            .await?;
 
         Ok(HealthCheckResult {
             controller_id: controller_id.to_string(),

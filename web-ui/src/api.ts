@@ -588,7 +588,7 @@ export async function fetchCloudAiInvestigations() {
   return apiFetch<AiInvestigationRecord[]>("/api/v1/cloud/ai/investigations");
 }
 
-export interface WiresockFleetOverview {
+export interface VpnGatewayCompatFleetOverview {
   tenant_id: string;
   reporting_endpoints: number;
   active_split_templates: number;
@@ -597,10 +597,10 @@ export interface WiresockFleetOverview {
   bypass_events: number;
   fleet_health_score: number;
   controllers_reporting: number;
-  split_templates: WiresockSplitTemplateRecord[];
+  split_templates: VpnGatewayCompatSplitTemplateRecord[];
 }
 
-export interface WiresockSplitTemplateRecord {
+export interface VpnGatewayCompatSplitTemplateRecord {
   id: string;
   tenant_id: string;
   controller_id?: string;
@@ -613,7 +613,7 @@ export interface WiresockSplitTemplateRecord {
   synced_at: string;
 }
 
-export interface WiresockTcpTerminationRecord {
+export interface VpnGatewayCompatTcpTerminationRecord {
   id: string;
   tenant_id: string;
   controller_id?: string;
@@ -625,7 +625,7 @@ export interface WiresockTcpTerminationRecord {
   synced_at: string;
 }
 
-export interface WiresockHandshakeProxyRecord {
+export interface VpnGatewayCompatHandshakeProxyRecord {
   id: string;
   tenant_id: string;
   controller_id?: string;
@@ -637,15 +637,15 @@ export interface WiresockHandshakeProxyRecord {
 }
 
 export async function fetchCloudSplitTemplates() {
-  return apiFetch<WiresockFleetOverview>("/api/v1/cloud/split-templates");
+  return apiFetch<VpnGatewayCompatFleetOverview>("/api/v1/cloud/split-templates");
 }
 
 export async function fetchCloudTcpTermination() {
-  return apiFetch<WiresockTcpTerminationRecord[]>("/api/v1/cloud/tcp-termination");
+  return apiFetch<VpnGatewayCompatTcpTerminationRecord[]>("/api/v1/cloud/tcp-termination");
 }
 
 export async function fetchCloudHandshakeProxy() {
-  return apiFetch<WiresockHandshakeProxyRecord[]>("/api/v1/cloud/handshake-proxy");
+  return apiFetch<VpnGatewayCompatHandshakeProxyRecord[]>("/api/v1/cloud/handshake-proxy");
 }
 
 export async function fetchIdentityProviders() {

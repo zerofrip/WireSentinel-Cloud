@@ -145,7 +145,11 @@ impl TeamManager {
         })
     }
 
-    pub async fn list_members(&self, tenant_id: &str, team_id: &str) -> Result<Vec<TeamMember>, DbError> {
+    pub async fn list_members(
+        &self,
+        tenant_id: &str,
+        team_id: &str,
+    ) -> Result<Vec<TeamMember>, DbError> {
         self.get(tenant_id, team_id).await?;
         let rows: Vec<(String, String, String, String, String)> = sqlx::query_as(
             "SELECT id, team_id, user_id, role, created_at FROM team_memberships WHERE team_id = ?",

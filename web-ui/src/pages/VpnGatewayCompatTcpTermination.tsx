@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchCloudTcpTermination, type WiresockTcpTerminationRecord } from "../api";
+import { fetchCloudTcpTermination, type VpnGatewayCompatTcpTerminationRecord } from "../api";
 
-export function WiresockTcpTerminationPage() {
-  const [rules, setRules] = useState<WiresockTcpTerminationRecord[]>([]);
+export function VpnGatewayCompatTcpTerminationPage() {
+  const [rules, setRules] = useState<VpnGatewayCompatTcpTerminationRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

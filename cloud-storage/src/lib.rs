@@ -148,7 +148,12 @@ pub struct AzureBackupProvider;
 
 #[async_trait]
 impl BackupStorageProvider for AzureBackupProvider {
-    async fn upload(&self, _tenant_id: &str, _object_key: &str, _data: &[u8]) -> Result<(), String> {
+    async fn upload(
+        &self,
+        _tenant_id: &str,
+        _object_key: &str,
+        _data: &[u8],
+    ) -> Result<(), String> {
         Err("Azure backup provider is a stub".into())
     }
 
@@ -225,7 +230,11 @@ impl BackupStorageService {
         })
     }
 
-    pub async fn restore(&self, tenant_id: &str, object_key: &str) -> Result<Vec<u8>, StorageError> {
+    pub async fn restore(
+        &self,
+        tenant_id: &str,
+        object_key: &str,
+    ) -> Result<Vec<u8>, StorageError> {
         self.provider
             .download(tenant_id, object_key)
             .await
@@ -244,7 +253,17 @@ impl BackupStorageService {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, storage_provider, object_key, content_type, size_bytes, checksum, metadata, created_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    storage_provider,
+                    object_key,
+                    content_type,
+                    size_bytes,
+                    checksum,
+                    metadata,
+                    created_at,
+                )| {
                     BackupObject {
                         id,
                         tenant_id,

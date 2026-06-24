@@ -11,11 +11,7 @@ pub struct PaymentIntent {
 
 #[async_trait]
 pub trait PaymentProvider: Send + Sync {
-    async fn create_checkout(
-        &self,
-        tenant_id: &str,
-        plan: &str,
-    ) -> Result<PaymentIntent, String>;
+    async fn create_checkout(&self, tenant_id: &str, plan: &str) -> Result<PaymentIntent, String>;
     async fn cancel_subscription(&self, subscription_id: &str) -> Result<(), String>;
 }
 
@@ -23,11 +19,7 @@ pub struct StubPaymentProvider;
 
 #[async_trait]
 impl PaymentProvider for StubPaymentProvider {
-    async fn create_checkout(
-        &self,
-        tenant_id: &str,
-        plan: &str,
-    ) -> Result<PaymentIntent, String> {
+    async fn create_checkout(&self, tenant_id: &str, plan: &str) -> Result<PaymentIntent, String> {
         Ok(PaymentIntent {
             id: format!("pi_stub_{tenant_id}"),
             amount_cents: 0,

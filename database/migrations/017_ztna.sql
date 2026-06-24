@@ -1,4 +1,4 @@
--- Phase 15 ZTNA cloud integration (15-M / 15-O partial)
+-- ZTNA cloud integration: identity, trust, policy, resource, segment, connector, decision, rollup tables
 
 CREATE TABLE IF NOT EXISTS identity_providers (
     id TEXT PRIMARY KEY NOT NULL,

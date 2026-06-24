@@ -1,4 +1,4 @@
--- Phase 17 XDR cloud integration (17-L)
+-- XDR cloud integration
 
 CREATE TABLE IF NOT EXISTS tenant_xdr_incidents (
     id TEXT PRIMARY KEY NOT NULL,

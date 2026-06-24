@@ -207,11 +207,7 @@ impl AiFleetMonitor {
         let fleet_ai_risk_score = if rollups.is_empty() {
             0.0
         } else {
-            rollups
-                .iter()
-                .map(|r| r.fleet_ai_risk_score)
-                .sum::<f64>()
-                / rollups.len() as f64
+            rollups.iter().map(|r| r.fleet_ai_risk_score).sum::<f64>() / rollups.len() as f64
         };
 
         Ok(AiFleetOverview {
@@ -223,10 +219,7 @@ impl AiFleetMonitor {
             compliance_pct,
             avg_risk_score,
             prompt_injection_events: rollups.iter().map(|r| r.prompt_injection_events).sum(),
-            data_exfiltration_events: rollups
-                .iter()
-                .map(|r| r.data_exfiltration_events)
-                .sum(),
+            data_exfiltration_events: rollups.iter().map(|r| r.data_exfiltration_events).sum(),
             fleet_ai_risk_score,
             controllers_reporting,
             rollups,
@@ -579,8 +572,7 @@ impl AiFleetMonitor {
                         prompt_injection_events,
                         data_exfiltration_events,
                         fleet_ai_risk_score,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

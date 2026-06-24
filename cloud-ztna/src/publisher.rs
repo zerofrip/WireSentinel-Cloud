@@ -271,12 +271,11 @@ impl ResourcePublisher {
         resource_id: &str,
         actor: Option<&str>,
     ) -> Result<(), DbError> {
-        let result =
-            sqlx::query("DELETE FROM published_resources WHERE id = ? AND tenant_id = ?")
-                .bind(resource_id)
-                .bind(tenant_id)
-                .execute(&self.pool)
-                .await?;
+        let result = sqlx::query("DELETE FROM published_resources WHERE id = ? AND tenant_id = ?")
+            .bind(resource_id)
+            .bind(tenant_id)
+            .execute(&self.pool)
+            .await?;
         if result.rows_affected() == 0 {
             return Err(DbError::NotFound(format!("resource {resource_id}")));
         }

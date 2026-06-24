@@ -1,10 +1,10 @@
-use cloud_core::{audit_wiresock_mutation, AuditWriteRequest};
+use cloud_core::{audit_vpn_gateway_compat_mutation, AuditWriteRequest};
 use database::{models::now_iso, DbError, DbPool};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockSplitTemplatePolicyRecord {
+pub struct VpnGatewayCompatSplitTemplatePolicyRecord {
     pub id: String,
     pub tenant_id: String,
     pub name: String,
@@ -20,7 +20,7 @@ pub struct WiresockSplitTemplatePolicyRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateWiresockSplitTemplateRequest {
+pub struct CreateVpnGatewayCompatSplitTemplateRequest {
     pub name: Option<String>,
     pub description: Option<String>,
     pub template_mode: Option<String>,
@@ -31,7 +31,7 @@ pub struct CreateWiresockSplitTemplateRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateWiresockSplitTemplateRequest {
+pub struct UpdateVpnGatewayCompatSplitTemplateRequest {
     pub name: Option<String>,
     pub description: Option<String>,
     pub template_mode: Option<String>,
@@ -41,11 +41,11 @@ pub struct UpdateWiresockSplitTemplateRequest {
     pub content: Option<serde_json::Value>,
 }
 
-pub struct TenantWiresockPolicyService {
+pub struct TenantVpnGatewayCompatPolicyService {
     pool: DbPool,
 }
 
-impl TenantWiresockPolicyService {
+impl TenantVpnGatewayCompatPolicyService {
     pub fn new(pool: DbPool) -> Self {
         Self { pool }
     }
@@ -53,7 +53,7 @@ impl TenantWiresockPolicyService {
     pub async fn list_split_template_policies(
         &self,
         tenant_id: &str,
-    ) -> Result<Vec<WiresockSplitTemplatePolicyRecord>, DbError> {
+    ) -> Result<Vec<VpnGatewayCompatSplitTemplatePolicyRecord>, DbError> {
         let rows: Vec<(
             String,
             String,
@@ -93,7 +93,7 @@ impl TenantWiresockPolicyService {
                     created_at,
                     updated_at,
                 )| {
-                    WiresockSplitTemplatePolicyRecord {
+                    VpnGatewayCompatSplitTemplatePolicyRecord {
                         id,
                         tenant_id,
                         name,
@@ -116,9 +116,9 @@ impl TenantWiresockPolicyService {
     pub async fn create_split_template(
         &self,
         tenant_id: &str,
-        req: CreateWiresockSplitTemplateRequest,
+        req: CreateVpnGatewayCompatSplitTemplateRequest,
         actor: Option<&str>,
-    ) -> Result<WiresockSplitTemplatePolicyRecord, DbError> {
+    ) -> Result<VpnGatewayCompatSplitTemplatePolicyRecord, DbError> {
         let id = Uuid::new_v4().to_string();
         let now = now_iso();
         let name = req.name.unwrap_or_else(|| "Split tunnel template".into());
@@ -127,9 +127,8 @@ impl TenantWiresockPolicyService {
         let enabled = req.enabled.unwrap_or(true);
         let app_rules_count = req.app_rules_count.unwrap_or(0);
         let domain_rules_count = req.domain_rules_count.unwrap_or(0);
-        let content_json =
-            serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
-                .unwrap_or_else(|_| "{}".into());
+        let content_json = serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
+            .unwrap_or_else(|_| "{}".into());
 
         sqlx::query(
             "INSERT INTO tenant_wiresock_split_templates (
@@ -153,14 +152,14 @@ impl TenantWiresockPolicyService {
         .execute(&self.pool)
         .await?;
 
-        audit_wiresock_mutation(
+        audit_vpn_gateway_compat_mutation(
             &self.pool,
             AuditWriteRequest {
                 tenant_id: tenant_id.to_string(),
-                source: "cloud-wiresock".into(),
+                source: "cloud-vpn-gateway-compat".into(),
                 actor: actor.map(str::to_string),
-                action: "wiresock.split_template.create".into(),
-                resource_type: Some("wiresock_split_template".into()),
+                action: "vpn_gateway_compat.split_template.create".into(),
+                resource_type: Some("vpn_gateway_compat_split_template".into()),
                 resource_id: Some(id.clone()),
                 details: serde_json::json!({
                     "name": name,
@@ -170,7 +169,7 @@ impl TenantWiresockPolicyService {
         )
         .await?;
 
-        Ok(WiresockSplitTemplatePolicyRecord {
+        Ok(VpnGatewayCompatSplitTemplatePolicyRecord {
             id,
             tenant_id: tenant_id.to_string(),
             name,
@@ -190,15 +189,17 @@ impl TenantWiresockPolicyService {
         &self,
         tenant_id: &str,
         template_id: &str,
-        req: UpdateWiresockSplitTemplateRequest,
+        req: UpdateVpnGatewayCompatSplitTemplateRequest,
         actor: Option<&str>,
-    ) -> Result<WiresockSplitTemplatePolicyRecord, DbError> {
+    ) -> Result<VpnGatewayCompatSplitTemplatePolicyRecord, DbError> {
         let existing = self
             .list_split_template_policies(tenant_id)
             .await?
             .into_iter()
             .find(|p| p.id == template_id)
-            .ok_or_else(|| DbError::NotFound(format!("wiresock split template {template_id}")))?;
+            .ok_or_else(|| {
+                DbError::NotFound(format!("vpn gateway compat split template {template_id}"))
+            })?;
 
         let now = now_iso();
         let name = req.name.unwrap_or(existing.name);
@@ -206,7 +207,9 @@ impl TenantWiresockPolicyService {
         let template_mode = req.template_mode.unwrap_or(existing.template_mode);
         let enabled = req.enabled.unwrap_or(existing.enabled);
         let app_rules_count = req.app_rules_count.unwrap_or(existing.app_rules_count);
-        let domain_rules_count = req.domain_rules_count.unwrap_or(existing.domain_rules_count);
+        let domain_rules_count = req
+            .domain_rules_count
+            .unwrap_or(existing.domain_rules_count);
         let content = req.content.unwrap_or(existing.content);
         let content_json = serde_json::to_string(&content).unwrap_or_else(|_| "{}".into());
 
@@ -230,14 +233,14 @@ impl TenantWiresockPolicyService {
         .execute(&self.pool)
         .await?;
 
-        audit_wiresock_mutation(
+        audit_vpn_gateway_compat_mutation(
             &self.pool,
             AuditWriteRequest {
                 tenant_id: tenant_id.to_string(),
-                source: "cloud-wiresock".into(),
+                source: "cloud-vpn-gateway-compat".into(),
                 actor: actor.map(str::to_string),
-                action: "wiresock.split_template.update".into(),
-                resource_type: Some("wiresock_split_template".into()),
+                action: "vpn_gateway_compat.split_template.update".into(),
+                resource_type: Some("vpn_gateway_compat_split_template".into()),
                 resource_id: Some(template_id.to_string()),
                 details: serde_json::json!({
                     "name": name,
@@ -248,7 +251,7 @@ impl TenantWiresockPolicyService {
         )
         .await?;
 
-        Ok(WiresockSplitTemplatePolicyRecord {
+        Ok(VpnGatewayCompatSplitTemplatePolicyRecord {
             id: template_id.to_string(),
             tenant_id: tenant_id.to_string(),
             name,

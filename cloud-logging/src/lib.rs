@@ -88,17 +88,19 @@ impl LogAggregationService {
 
         Ok(rows
             .into_iter()
-            .map(|(id, tenant_id, source, level, message, fields_json, ingested_at)| {
-                AggregatedLogEntry {
-                    id,
-                    tenant_id,
-                    source,
-                    level,
-                    message,
-                    fields: serde_json::from_str(&fields_json).unwrap_or(serde_json::json!({})),
-                    ingested_at,
-                }
-            })
+            .map(
+                |(id, tenant_id, source, level, message, fields_json, ingested_at)| {
+                    AggregatedLogEntry {
+                        id,
+                        tenant_id,
+                        source,
+                        level,
+                        message,
+                        fields: serde_json::from_str(&fields_json).unwrap_or(serde_json::json!({})),
+                        ingested_at,
+                    }
+                },
+            )
             .collect())
     }
 
@@ -135,17 +137,19 @@ impl LogAggregationService {
 
         Ok(rows
             .into_iter()
-            .map(|(id, tenant_id, source, level, message, fields_json, ingested_at)| {
-                AggregatedLogEntry {
-                    id,
-                    tenant_id,
-                    source,
-                    level,
-                    message,
-                    fields: serde_json::from_str(&fields_json).unwrap_or(serde_json::json!({})),
-                    ingested_at,
-                }
-            })
+            .map(
+                |(id, tenant_id, source, level, message, fields_json, ingested_at)| {
+                    AggregatedLogEntry {
+                        id,
+                        tenant_id,
+                        source,
+                        level,
+                        message,
+                        fields: serde_json::from_str(&fields_json).unwrap_or(serde_json::json!({})),
+                        ingested_at,
+                    }
+                },
+            )
             .collect())
     }
 }

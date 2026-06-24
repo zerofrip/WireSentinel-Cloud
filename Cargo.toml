@@ -23,7 +23,7 @@ members = [
     "cloud-xdr",
     "cloud-cnapp",
     "cloud-ai",
-    "cloud-wiresock",
+    "cloud-vpn-gateway-compat",
     "compliance",
     "api",
 ]
@@ -83,7 +83,7 @@ cloud-sse = { path = "cloud-sse" }
 cloud-xdr = { path = "cloud-xdr" }
 cloud-cnapp = { path = "cloud-cnapp" }
 cloud-ai = { path = "cloud-ai" }
-cloud-wiresock = { path = "cloud-wiresock" }
+cloud-vpn-gateway-compat = { path = "cloud-vpn-gateway-compat" }
 cloud-ha = { path = "cloud-ha" }
 cloud-logging = { path = "cloud-logging" }
 cloud-observability = { path = "cloud-observability" }

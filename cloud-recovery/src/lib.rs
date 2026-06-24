@@ -49,7 +49,10 @@ impl DisasterRecoveryManager {
         Self { pool }
     }
 
-    pub async fn create_plan(&self, req: CreateRecoveryPlanRequest) -> Result<RecoveryPlan, DbError> {
+    pub async fn create_plan(
+        &self,
+        req: CreateRecoveryPlanRequest,
+    ) -> Result<RecoveryPlan, DbError> {
         let id = Uuid::new_v4().to_string();
         let created_at = now_iso();
         let steps = req.steps.unwrap_or_default();
@@ -136,7 +139,16 @@ impl DisasterRecoveryManager {
         Ok(rows
             .into_iter()
             .map(
-                |(id, plan_id, tenant_id, status, started_at, completed_at, details, created_at)| {
+                |(
+                    id,
+                    plan_id,
+                    tenant_id,
+                    status,
+                    started_at,
+                    completed_at,
+                    details,
+                    created_at,
+                )| {
                     RecoveryRun {
                         id,
                         plan_id,

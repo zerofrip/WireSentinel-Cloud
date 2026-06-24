@@ -41,10 +41,8 @@ pub struct TelemetryPipeline {
 impl TelemetryPipeline {
     pub fn new(pool: DbPool) -> Self {
         let metrics = CloudMetricsAggregator::new(pool.clone());
-        let mut exporters: Vec<Arc<dyn TelemetryExporter>> = vec![
-            Arc::new(PrometheusExporter),
-            Arc::new(JsonMetricsExporter),
-        ];
+        let mut exporters: Vec<Arc<dyn TelemetryExporter>> =
+            vec![Arc::new(PrometheusExporter), Arc::new(JsonMetricsExporter)];
         if std::env::var("OTEL_ENABLED").ok().as_deref() == Some("1") {
             exporters.push(Arc::new(OtlpExporter::from_env()));
         }
@@ -116,10 +114,7 @@ impl TelemetryPipeline {
     }
 
     pub async fn flush(&self) -> Result<FlushReport, String> {
-        let records = self
-            .collect_records()
-            .await
-            .map_err(|e| e.to_string())?;
+        let records = self.collect_records().await.map_err(|e| e.to_string())?;
         let mut exported = Vec::new();
         for exporter in &self.exporters {
             if exporter.name() == "otlp" && !self.config.otel_enabled {

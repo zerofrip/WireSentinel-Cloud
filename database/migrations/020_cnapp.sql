@@ -1,4 +1,4 @@
--- Phase 18 CNAPP cloud integration (18-L)
+-- CNAPP cloud integration
 
 CREATE TABLE IF NOT EXISTS tenant_cnapp_posture (
     id TEXT PRIMARY KEY NOT NULL,

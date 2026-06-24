@@ -126,9 +126,8 @@ impl TenantCnappPolicyService {
         let posture_score = req.posture_score.unwrap_or(0.0);
         let risk_level = req.risk_level.unwrap_or_else(|| "medium".into());
         let findings_count = req.findings_count.unwrap_or(0);
-        let content_json =
-            serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
-                .unwrap_or_else(|_| "{}".into());
+        let content_json = serde_json::to_string(&req.content.unwrap_or(serde_json::json!({})))
+            .unwrap_or_else(|_| "{}".into());
 
         sqlx::query(
             "INSERT INTO tenant_cnapp_posture (

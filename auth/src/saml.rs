@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::provider::{IdentityClaims, IdentityProvider};
+use async_trait::async_trait;
 
 /// SAML identity provider stub — real SAML assertion parsing is out of scope for Phase 11.
 pub struct SamlIdentityProvider;

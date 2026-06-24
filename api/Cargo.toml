@@ -29,7 +29,7 @@ cloud-sse = { workspace = true }
 cloud-xdr = { workspace = true }
 cloud-cnapp = { workspace = true }
 cloud-ai = { workspace = true }
-cloud-wiresock = { workspace = true }
+cloud-vpn-gateway-compat = { workspace = true }
 cloud-metering = { workspace = true }
 cloud-provisioning = { workspace = true }
 cloud-quotas = { workspace = true }

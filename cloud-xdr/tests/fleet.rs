@@ -1,6 +1,4 @@
-use cloud_xdr::{
-    CreateXdrHuntRequest, XdrFleetMonitor, XdrRollupPayload, TenantXdrPolicyService,
-};
+use cloud_xdr::{CreateXdrHuntRequest, TenantXdrPolicyService, XdrFleetMonitor, XdrRollupPayload};
 use database::models::now_iso;
 
 async fn seed_tenant(pool: &database::DbPool) -> String {

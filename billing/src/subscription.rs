@@ -188,15 +188,17 @@ impl SubscriptionManager {
 
         Ok(rows
             .into_iter()
-            .map(|(id, tenant_id, plan, status, seats, expires_at, created_at)| Subscription {
-                id,
-                tenant_id,
-                plan,
-                status,
-                seats,
-                expires_at,
-                created_at,
-            })
+            .map(
+                |(id, tenant_id, plan, status, seats, expires_at, created_at)| Subscription {
+                    id,
+                    tenant_id,
+                    plan,
+                    status,
+                    seats,
+                    expires_at,
+                    created_at,
+                },
+            )
             .collect())
     }
 
@@ -223,8 +225,7 @@ impl SubscriptionManager {
         if count.0 >= limits.max_users {
             return Err(QuotaError::Exceeded(format!(
                 "user limit {} reached for plan {}",
-                limits.max_users,
-                sub.plan
+                limits.max_users, sub.plan
             )));
         }
         Ok(())

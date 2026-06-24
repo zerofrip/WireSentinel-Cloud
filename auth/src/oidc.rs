@@ -1,5 +1,5 @@
-use async_trait::async_trait;
 use crate::provider::{IdentityClaims, IdentityProvider};
+use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub struct OidcConfig {

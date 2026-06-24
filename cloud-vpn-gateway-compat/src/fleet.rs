@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockRollupPayload {
+pub struct VpnGatewayCompatRollupPayload {
     pub reporting_endpoints: i64,
     pub active_split_templates: i64,
     pub tcp_termination_rules: i64,
@@ -13,7 +13,7 @@ pub struct WiresockRollupPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockFleetRollup {
+pub struct VpnGatewayCompatFleetRollup {
     pub id: String,
     pub tenant_id: String,
     pub controller_id: Option<String>,
@@ -29,7 +29,7 @@ pub struct WiresockFleetRollup {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockFleetOverview {
+pub struct VpnGatewayCompatFleetOverview {
     pub tenant_id: String,
     pub reporting_endpoints: i64,
     pub active_split_templates: i64,
@@ -38,12 +38,12 @@ pub struct WiresockFleetOverview {
     pub bypass_events: i64,
     pub fleet_health_score: f64,
     pub controllers_reporting: i64,
-    pub rollups: Vec<WiresockFleetRollup>,
-    pub split_templates: Vec<WiresockSplitTemplateRecord>,
+    pub rollups: Vec<VpnGatewayCompatFleetRollup>,
+    pub split_templates: Vec<VpnGatewayCompatSplitTemplateRecord>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockSplitTemplateRecord {
+pub struct VpnGatewayCompatSplitTemplateRecord {
     pub id: String,
     pub tenant_id: String,
     pub controller_id: Option<String>,
@@ -60,7 +60,7 @@ pub struct WiresockSplitTemplateRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockTcpTerminationRecord {
+pub struct VpnGatewayCompatTcpTerminationRecord {
     pub id: String,
     pub tenant_id: String,
     pub controller_id: Option<String>,
@@ -76,7 +76,7 @@ pub struct WiresockTcpTerminationRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WiresockHandshakeProxyRecord {
+pub struct VpnGatewayCompatHandshakeProxyRecord {
     pub id: String,
     pub tenant_id: String,
     pub controller_id: Option<String>,
@@ -90,11 +90,11 @@ pub struct WiresockHandshakeProxyRecord {
     pub updated_at: String,
 }
 
-pub struct WiresockFleetMonitor {
+pub struct VpnGatewayCompatFleetMonitor {
     pool: DbPool,
 }
 
-impl WiresockFleetMonitor {
+impl VpnGatewayCompatFleetMonitor {
     pub fn new(pool: DbPool) -> Self {
         Self { pool }
     }
@@ -103,8 +103,8 @@ impl WiresockFleetMonitor {
         &self,
         tenant_id: &str,
         controller_id: Option<&str>,
-        payload: &WiresockRollupPayload,
-    ) -> Result<WiresockFleetRollup, DbError> {
+        payload: &VpnGatewayCompatRollupPayload,
+    ) -> Result<VpnGatewayCompatFleetRollup, DbError> {
         let id = Uuid::new_v4().to_string();
         let now = now_iso();
         let rollup_json = serde_json::to_string(payload).unwrap_or_else(|_| "{}".into());
@@ -131,7 +131,7 @@ impl WiresockFleetMonitor {
         .execute(&self.pool)
         .await?;
 
-        Ok(WiresockFleetRollup {
+        Ok(VpnGatewayCompatFleetRollup {
             id,
             tenant_id: tenant_id.to_string(),
             controller_id: controller_id.map(str::to_string),
@@ -147,7 +147,10 @@ impl WiresockFleetMonitor {
         })
     }
 
-    pub async fn fleet_overview(&self, tenant_id: &str) -> Result<WiresockFleetOverview, DbError> {
+    pub async fn fleet_overview(
+        &self,
+        tenant_id: &str,
+    ) -> Result<VpnGatewayCompatFleetOverview, DbError> {
         let rollups = self.list_rollups(tenant_id, Some(50)).await?;
         let split_templates = self.list_split_templates(tenant_id, Some(50)).await?;
         let controllers_reporting = rollups
@@ -159,14 +162,10 @@ impl WiresockFleetMonitor {
         let fleet_health_score = if rollups.is_empty() {
             0.0
         } else {
-            rollups
-                .iter()
-                .map(|r| r.fleet_health_score)
-                .sum::<f64>()
-                / rollups.len() as f64
+            rollups.iter().map(|r| r.fleet_health_score).sum::<f64>() / rollups.len() as f64
         };
 
-        Ok(WiresockFleetOverview {
+        Ok(VpnGatewayCompatFleetOverview {
             tenant_id: tenant_id.to_string(),
             reporting_endpoints: rollups.iter().map(|r| r.reporting_endpoints).sum(),
             active_split_templates: rollups.iter().map(|r| r.active_split_templates).sum(),
@@ -184,7 +183,7 @@ impl WiresockFleetMonitor {
         &self,
         tenant_id: &str,
         limit: Option<i64>,
-    ) -> Result<Vec<WiresockSplitTemplateRecord>, DbError> {
+    ) -> Result<Vec<VpnGatewayCompatSplitTemplateRecord>, DbError> {
         let limit = limit.unwrap_or(100);
         let rows: Vec<(
             String,
@@ -229,7 +228,7 @@ impl WiresockFleetMonitor {
                     created_at,
                     updated_at,
                 )| {
-                    WiresockSplitTemplateRecord {
+                    VpnGatewayCompatSplitTemplateRecord {
                         id,
                         tenant_id,
                         controller_id,
@@ -254,7 +253,7 @@ impl WiresockFleetMonitor {
         &self,
         tenant_id: &str,
         limit: Option<i64>,
-    ) -> Result<Vec<WiresockTcpTerminationRecord>, DbError> {
+    ) -> Result<Vec<VpnGatewayCompatTcpTerminationRecord>, DbError> {
         let limit = limit.unwrap_or(100);
         let rows: Vec<(
             String,
@@ -296,7 +295,7 @@ impl WiresockFleetMonitor {
                     created_at,
                     updated_at,
                 )| {
-                    WiresockTcpTerminationRecord {
+                    VpnGatewayCompatTcpTerminationRecord {
                         id,
                         tenant_id,
                         controller_id,
@@ -320,7 +319,7 @@ impl WiresockFleetMonitor {
         &self,
         tenant_id: &str,
         limit: Option<i64>,
-    ) -> Result<Vec<WiresockHandshakeProxyRecord>, DbError> {
+    ) -> Result<Vec<VpnGatewayCompatHandshakeProxyRecord>, DbError> {
         let limit = limit.unwrap_or(100);
         let rows: Vec<(
             String,
@@ -360,7 +359,7 @@ impl WiresockFleetMonitor {
                     created_at,
                     updated_at,
                 )| {
-                    WiresockHandshakeProxyRecord {
+                    VpnGatewayCompatHandshakeProxyRecord {
                         id,
                         tenant_id,
                         controller_id,
@@ -383,7 +382,7 @@ impl WiresockFleetMonitor {
         &self,
         tenant_id: &str,
         limit: Option<i64>,
-    ) -> Result<Vec<WiresockFleetRollup>, DbError> {
+    ) -> Result<Vec<VpnGatewayCompatFleetRollup>, DbError> {
         let limit = limit.unwrap_or(50);
         let rows: Vec<(
             String,
@@ -426,7 +425,7 @@ impl WiresockFleetMonitor {
                     rolled_up_at,
                     created_at,
                 )| {
-                    WiresockFleetRollup {
+                    VpnGatewayCompatFleetRollup {
                         id,
                         tenant_id,
                         controller_id,
@@ -436,8 +435,7 @@ impl WiresockFleetMonitor {
                         handshake_proxy_active,
                         bypass_events,
                         fleet_health_score,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

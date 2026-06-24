@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchCloudSplitTemplates, type WiresockFleetOverview } from "../api";
+import { fetchCloudSplitTemplates, type VpnGatewayCompatFleetOverview } from "../api";
 
-export function WiresockSplitTemplatesPage() {
-  const [overview, setOverview] = useState<WiresockFleetOverview | null>(null);
+export function VpnGatewayCompatSplitTemplatesPage() {
+  const [overview, setOverview] = useState<VpnGatewayCompatFleetOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

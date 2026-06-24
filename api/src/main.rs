@@ -1,30 +1,31 @@
 use auth::JwtAuthService;
 use billing::SubscriptionManager;
+use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
 use cloud_api::{build_router, AppState};
 use cloud_billing::BillingManager;
+use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
 use cloud_core::{
-    CloudMetricsAggregator, CloudSecurityPolicy, CreateTenantRequest, AnonymityFleetMonitor,
+    AnonymityFleetMonitor, CloudMetricsAggregator, CloudSecurityPolicy, CreateTenantRequest,
     KernelFleetMonitor, OrganizationManager, TeamManager, TenantManager,
 };
-use cloud_ztna::{
-    CloudZtnaPolicyService, ResourcePublisher, TenantIdentityService, ZtnaFleetMonitor,
-};
-use cloud_sse::{SseAnalyticsService, SseFleetMonitor, TenantSsePolicyService};
-use cloud_xdr::{XdrAnalyticsService, XdrFleetMonitor, TenantXdrPolicyService};
-use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
-use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
-use cloud_wiresock::{
-    WiresockAnalyticsService, WiresockFleetMonitor, TenantWiresockPolicyService,
-};
+use cloud_ha::HaManager;
+use cloud_logging::LogAggregationService;
 use cloud_metering::UsageMeteringService;
+use cloud_observability::TelemetryPipeline;
 use cloud_provisioning::HostedControllerManager;
 use cloud_quotas::QuotaManager;
 use cloud_recovery::DisasterRecoveryManager;
-use cloud_ha::HaManager;
-use cloud_logging::LogAggregationService;
-use cloud_observability::TelemetryPipeline;
 use cloud_regions::RegionManager;
+use cloud_sse::{SseAnalyticsService, SseFleetMonitor, TenantSsePolicyService};
 use cloud_storage::BackupStorageService;
+use cloud_vpn_gateway_compat::{
+    TenantVpnGatewayCompatPolicyService, VpnGatewayCompatAnalyticsService,
+    VpnGatewayCompatFleetMonitor,
+};
+use cloud_xdr::{TenantXdrPolicyService, XdrAnalyticsService, XdrFleetMonitor};
+use cloud_ztna::{
+    CloudZtnaPolicyService, ResourcePublisher, TenantIdentityService, ZtnaFleetMonitor,
+};
 use compliance::ComplianceEngine;
 use database::setup;
 use federation::FederationManager;
@@ -36,9 +37,10 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            "cloud_api=debug,tower_http=debug".into()
-        }))
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "cloud_api=debug,tower_http=debug".into()),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
@@ -84,15 +86,19 @@ async fn main() -> anyhow::Result<()> {
         xdr_analytics: Arc::new(XdrAnalyticsService::new(XdrFleetMonitor::new(pool.clone()))),
         cnapp_fleet: Arc::new(CnappFleetMonitor::new(pool.clone())),
         cnapp_policies: Arc::new(TenantCnappPolicyService::new(pool.clone())),
-        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(pool.clone()))),
+        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(
+            pool.clone(),
+        ))),
         ai_fleet: Arc::new(AiFleetMonitor::new(pool.clone())),
         ai_policies: Arc::new(TenantAiPolicyService::new(pool.clone())),
         ai_analytics: Arc::new(AiAnalyticsService::new(AiFleetMonitor::new(pool.clone()))),
-        wiresock_fleet: Arc::new(WiresockFleetMonitor::new(pool.clone())),
-        wiresock_policies: Arc::new(TenantWiresockPolicyService::new(pool.clone())),
-        wiresock_analytics: Arc::new(WiresockAnalyticsService::new(WiresockFleetMonitor::new(
+        vpn_gateway_compat_fleet: Arc::new(VpnGatewayCompatFleetMonitor::new(pool.clone())),
+        vpn_gateway_compat_policies: Arc::new(TenantVpnGatewayCompatPolicyService::new(
             pool.clone(),
-        ))),
+        )),
+        vpn_gateway_compat_analytics: Arc::new(VpnGatewayCompatAnalyticsService::new(
+            VpnGatewayCompatFleetMonitor::new(pool.clone()),
+        )),
         subscriptions: Arc::new(SubscriptionManager::new(pool.clone())),
         billing,
         metering: Arc::new(UsageMeteringService::new(pool.clone())),

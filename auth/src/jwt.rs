@@ -108,13 +108,13 @@ impl JwtAuthService {
         let tenant_id = if let Some(t) = req.tenant_id {
             t
         } else {
-            let row: Option<(String,)> =
-                sqlx::query_as("SELECT id FROM tenants WHERE status = 'active' ORDER BY created_at LIMIT 1")
-                    .fetch_optional(&self.pool)
-                    .await
-                    .map_err(|e| AuthError::Internal(e.to_string()))?;
-            row.ok_or(AuthError::InvalidCredentials)?
-                .0
+            let row: Option<(String,)> = sqlx::query_as(
+                "SELECT id FROM tenants WHERE status = 'active' ORDER BY created_at LIMIT 1",
+            )
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
+            row.ok_or(AuthError::InvalidCredentials)?.0
         };
 
         let row: Option<(String, Option<String>, String)> = sqlx::query_as(
@@ -126,12 +126,11 @@ impl JwtAuthService {
         .await
         .map_err(|e| AuthError::Internal(e.to_string()))?;
 
-        let (user_id, password_hash, role_str) =
-            row.ok_or(AuthError::InvalidCredentials)?;
+        let (user_id, password_hash, role_str) = row.ok_or(AuthError::InvalidCredentials)?;
 
         let hash = password_hash.ok_or(AuthError::InvalidCredentials)?;
-        let valid = bcrypt::verify(&req.password, &hash)
-            .map_err(|e| AuthError::Internal(e.to_string()))?;
+        let valid =
+            bcrypt::verify(&req.password, &hash).map_err(|e| AuthError::Internal(e.to_string()))?;
         if !valid {
             return Err(AuthError::InvalidCredentials);
         }

@@ -1,8 +1,8 @@
-use crate::fleet::WiresockFleetMonitor;
+use crate::fleet::VpnGatewayCompatFleetMonitor;
 use database::DbError;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct WiresockAnalyticsSummary {
+pub struct VpnGatewayCompatAnalyticsSummary {
     pub tenant_id: String,
     pub reporting_endpoints: i64,
     pub active_split_templates: i64,
@@ -13,20 +13,23 @@ pub struct WiresockAnalyticsSummary {
     pub rollups_recorded: i64,
 }
 
-pub struct WiresockAnalyticsService {
-    fleet: WiresockFleetMonitor,
+pub struct VpnGatewayCompatAnalyticsService {
+    fleet: VpnGatewayCompatFleetMonitor,
 }
 
-impl WiresockAnalyticsService {
-    pub fn new(fleet: WiresockFleetMonitor) -> Self {
+impl VpnGatewayCompatAnalyticsService {
+    pub fn new(fleet: VpnGatewayCompatFleetMonitor) -> Self {
         Self { fleet }
     }
 
-    pub async fn analytics(&self, tenant_id: &str) -> Result<WiresockAnalyticsSummary, DbError> {
+    pub async fn analytics(
+        &self,
+        tenant_id: &str,
+    ) -> Result<VpnGatewayCompatAnalyticsSummary, DbError> {
         let overview = self.fleet.fleet_overview(tenant_id).await?;
         let rollups_recorded = overview.rollups.len() as i64;
 
-        Ok(WiresockAnalyticsSummary {
+        Ok(VpnGatewayCompatAnalyticsSummary {
             tenant_id: tenant_id.to_string(),
             reporting_endpoints: overview.reporting_endpoints,
             active_split_templates: overview.active_split_templates,

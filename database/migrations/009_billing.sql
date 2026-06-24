@@ -1,4 +1,4 @@
--- Phase 14-A: billing plans, invoices, usage records, billing events, stripe columns
+-- Billing plans, invoices, usage records, billing events, stripe columns
 
 CREATE TABLE IF NOT EXISTS billing_plans (
     id TEXT PRIMARY KEY NOT NULL,

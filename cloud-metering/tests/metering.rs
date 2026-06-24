@@ -1,4 +1,4 @@
-use cloud_metering::{RecordUsageRequest, UsageMetric, UsageMeteringService};
+use cloud_metering::{RecordUsageRequest, UsageMeteringService, UsageMetric};
 use database::models::now_iso;
 
 async fn seed_tenant(pool: &database::DbPool) -> String {

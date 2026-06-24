@@ -45,7 +45,8 @@ impl PlanManager {
                     tier,
                     price_cents,
                     currency,
-                    limits: serde_json::from_str(&limits_json).unwrap_or_else(|_| Plan::Free.limits()),
+                    limits: serde_json::from_str(&limits_json)
+                        .unwrap_or_else(|_| Plan::Free.limits()),
                     active: active != 0,
                 },
             )
@@ -53,11 +54,7 @@ impl PlanManager {
     }
 
     pub async fn get(&self, plan_id: &str) -> Result<Option<BillingPlan>, DbError> {
-        Ok(self
-            .list()
-            .await?
-            .into_iter()
-            .find(|p| p.id == plan_id))
+        Ok(self.list().await?.into_iter().find(|p| p.id == plan_id))
     }
 
     fn from_plan_info(info: PlanInfo) -> BillingPlan {

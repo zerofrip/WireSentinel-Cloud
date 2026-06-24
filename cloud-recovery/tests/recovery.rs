@@ -1,6 +1,4 @@
-use cloud_recovery::{
-    CreateRecoveryPlanRequest, DisasterRecoveryManager, RunRecoveryRequest,
-};
+use cloud_recovery::{CreateRecoveryPlanRequest, DisasterRecoveryManager, RunRecoveryRequest};
 use database::models::now_iso;
 
 async fn seed_tenant(pool: &database::DbPool) -> String {

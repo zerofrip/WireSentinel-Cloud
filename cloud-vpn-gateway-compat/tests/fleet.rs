@@ -1,6 +1,6 @@
-use cloud_wiresock::{
-    WiresockFleetMonitor, WiresockRollupPayload, CreateWiresockSplitTemplateRequest,
-    TenantWiresockPolicyService,
+use cloud_vpn_gateway_compat::{
+    CreateVpnGatewayCompatSplitTemplateRequest, TenantVpnGatewayCompatPolicyService,
+    VpnGatewayCompatFleetMonitor, VpnGatewayCompatRollupPayload,
 };
 use database::models::now_iso;
 
@@ -11,7 +11,7 @@ async fn seed_tenant(pool: &database::DbPool) -> String {
         "INSERT INTO tenants (id, name, slug, status, created_at) VALUES (?, 'WireSock Test', ?, 'active', ?)",
     )
     .bind(&id)
-    .bind(format!("wiresock-{id}"))
+    .bind(format!("vgc-{id}"))
     .bind(&ts)
     .execute(pool)
     .await
@@ -20,14 +20,14 @@ async fn seed_tenant(pool: &database::DbPool) -> String {
 }
 
 #[tokio::test]
-async fn wiresock_fleet_rollup_and_split_template_policy() {
+async fn vpn_gateway_compat_fleet_rollup_and_split_template_policy() {
     let pool = database::setup("sqlite::memory:").await.expect("db");
     let tenant_id = seed_tenant(&pool).await;
 
-    TenantWiresockPolicyService::new(pool.clone())
+    TenantVpnGatewayCompatPolicyService::new(pool.clone())
         .create_split_template(
             &tenant_id,
-            CreateWiresockSplitTemplateRequest {
+            CreateVpnGatewayCompatSplitTemplateRequest {
                 name: Some("Corporate bypass".into()),
                 description: Some("Default split tunnel".into()),
                 template_mode: Some("merge".into()),
@@ -41,12 +41,12 @@ async fn wiresock_fleet_rollup_and_split_template_policy() {
         .await
         .expect("split template");
 
-    let fleet = WiresockFleetMonitor::new(pool);
+    let fleet = VpnGatewayCompatFleetMonitor::new(pool);
     fleet
         .record_rollup(
             &tenant_id,
             Some("ctrl-1"),
-            &WiresockRollupPayload {
+            &VpnGatewayCompatRollupPayload {
                 reporting_endpoints: 12,
                 active_split_templates: 2,
                 tcp_termination_rules: 4,

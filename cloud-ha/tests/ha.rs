@@ -14,10 +14,7 @@ async fn leader_election_acquires_lease() {
         .expect("register");
 
     ha.heartbeat(&node.id).await.expect("heartbeat");
-    let event = ha
-        .try_acquire_leader(&node.id)
-        .await
-        .expect("acquire");
+    let event = ha.try_acquire_leader(&node.id).await.expect("acquire");
     assert!(event.is_some() || event.is_none());
 
     let leader = ha.current_leader().await.expect("leader");

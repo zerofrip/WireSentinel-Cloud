@@ -24,8 +24,7 @@ pub enum DbError {
 }
 
 fn default_database_url() -> String {
-    std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite://./data/cloud.db?mode=rwc".into())
+    std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://./data/cloud.db?mode=rwc".into())
 }
 
 pub fn resolve_database_url(url: Option<&str>) -> String {

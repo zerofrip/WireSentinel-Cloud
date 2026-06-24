@@ -116,8 +116,8 @@ impl TenantXdrPolicyService {
         let query_kind = req.query_kind.unwrap_or_else(|| "historical".into());
         let status = req.status.unwrap_or_else(|| "draft".into());
         let enabled = req.enabled.unwrap_or(true);
-        let query_json =
-            serde_json::to_string(&req.query.unwrap_or(serde_json::json!({}))).unwrap_or_else(|_| "{}".into());
+        let query_json = serde_json::to_string(&req.query.unwrap_or(serde_json::json!({})))
+            .unwrap_or_else(|_| "{}".into());
 
         sqlx::query(
             "INSERT INTO tenant_xdr_hunts (

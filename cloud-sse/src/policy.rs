@@ -56,7 +56,17 @@ impl TenantSsePolicyService {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, name, policy_kind, enabled, rules_json, default_action, created_at, updated_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    name,
+                    policy_kind,
+                    enabled,
+                    rules_json,
+                    default_action,
+                    created_at,
+                    updated_at,
+                )| {
                     SsePolicyRecord {
                         id,
                         tenant_id,

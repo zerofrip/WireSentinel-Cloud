@@ -1,4 +1,6 @@
-use cloud_sse::{CreateSsePolicyRequest, SseFleetMonitor, SseRollupPayload, TenantSsePolicyService};
+use cloud_sse::{
+    CreateSsePolicyRequest, SseFleetMonitor, SseRollupPayload, TenantSsePolicyService,
+};
 use database::models::now_iso;
 
 async fn seed_tenant(pool: &database::DbPool) -> String {

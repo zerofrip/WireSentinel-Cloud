@@ -1,4 +1,4 @@
--- Phase 19 AI Security cloud integration (19-L)
+-- AI Security cloud integration
 
 CREATE TABLE IF NOT EXISTS tenant_ai_investigations (
     id TEXT PRIMARY KEY NOT NULL,

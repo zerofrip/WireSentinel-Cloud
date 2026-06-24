@@ -40,10 +40,9 @@ impl CloudMetricsAggregator {
     }
 
     pub async fn snapshot(&self) -> Result<CloudMetricsSnapshot, DbError> {
-        let active: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM tenants WHERE status = 'active'")
-                .fetch_one(&self.pool)
-                .await?;
+        let active: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM tenants WHERE status = 'active'")
+            .fetch_one(&self.pool)
+            .await?;
         let isolated: (i64,) =
             sqlx::query_as("SELECT COUNT(*) FROM tenants WHERE status = 'isolated'")
                 .fetch_one(&self.pool)
@@ -57,15 +56,13 @@ impl CloudMetricsAggregator {
         let users: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users")
             .fetch_one(&self.pool)
             .await?;
-        let controllers: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM federated_controllers")
+        let controllers: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM federated_controllers")
+            .fetch_one(&self.pool)
+            .await?;
+        let conflicts: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM sync_conflicts WHERE resolved_at IS NULL")
                 .fetch_one(&self.pool)
                 .await?;
-        let conflicts: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM sync_conflicts WHERE resolved_at IS NULL",
-        )
-        .fetch_one(&self.pool)
-        .await?;
         let compliance: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM compliance_reports")
             .fetch_one(&self.pool)
             .await?;
@@ -84,40 +81,34 @@ impl CloudMetricsAggregator {
     }
 
     pub async fn tenant_snapshot(&self, tenant_id: &str) -> Result<TenantMetricsSnapshot, DbError> {
-        let orgs: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM organizations WHERE tenant_id = ?",
-        )
-        .bind(tenant_id)
-        .fetch_one(&self.pool)
-        .await?;
-        let teams: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM teams WHERE tenant_id = ?")
+        let orgs: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM organizations WHERE tenant_id = ?")
+            .bind(tenant_id)
+            .fetch_one(&self.pool)
+            .await?;
+        let teams: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM teams WHERE tenant_id = ?")
+            .bind(tenant_id)
+            .fetch_one(&self.pool)
+            .await?;
+        let users: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE tenant_id = ?")
+            .bind(tenant_id)
+            .fetch_one(&self.pool)
+            .await?;
+        let controllers: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM federated_controllers WHERE tenant_id = ?")
                 .bind(tenant_id)
                 .fetch_one(&self.pool)
                 .await?;
-        let users: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM users WHERE tenant_id = ?")
-                .bind(tenant_id)
-                .fetch_one(&self.pool)
-                .await?;
-        let controllers: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM federated_controllers WHERE tenant_id = ?",
-        )
-        .bind(tenant_id)
-        .fetch_one(&self.pool)
-        .await?;
         let conflicts: (i64,) = sqlx::query_as(
             "SELECT COUNT(*) FROM sync_conflicts WHERE tenant_id = ? AND resolved_at IS NULL",
         )
         .bind(tenant_id)
         .fetch_one(&self.pool)
         .await?;
-        let compliance: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM compliance_reports WHERE tenant_id = ?",
-        )
-        .bind(tenant_id)
-        .fetch_one(&self.pool)
-        .await?;
+        let compliance: (i64,) =
+            sqlx::query_as("SELECT COUNT(*) FROM compliance_reports WHERE tenant_id = ?")
+                .bind(tenant_id)
+                .fetch_one(&self.pool)
+                .await?;
 
         Ok(TenantMetricsSnapshot {
             tenant_id: tenant_id.to_string(),

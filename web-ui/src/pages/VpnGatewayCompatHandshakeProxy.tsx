@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { fetchCloudHandshakeProxy, type WiresockHandshakeProxyRecord } from "../api";
+import { fetchCloudHandshakeProxy, type VpnGatewayCompatHandshakeProxyRecord } from "../api";
 
-export function WiresockHandshakeProxyPage() {
-  const [proxies, setProxies] = useState<WiresockHandshakeProxyRecord[]>([]);
+export function VpnGatewayCompatHandshakeProxyPage() {
+  const [proxies, setProxies] = useState<VpnGatewayCompatHandshakeProxyRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

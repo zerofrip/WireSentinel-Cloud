@@ -428,7 +428,7 @@ dependencies = [
  "cloud-regions",
  "cloud-sse",
  "cloud-storage",
- "cloud-wiresock",
+ "cloud-vpn-gateway-compat",
  "cloud-xdr",
  "cloud-ztna",
  "compliance",
@@ -657,7 +657,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cloud-wiresock"
+name = "cloud-vpn-gateway-compat"
 version = "0.1.0"
 dependencies = [
  "cloud-core",

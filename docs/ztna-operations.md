@@ -39,7 +39,7 @@ ZTNA policy/resource mutations are written to `audit_events` via `audit_ztna_mut
 
 ## Database
 
-Cloud migration `017_ztna_phase15.sql` adds identity, trust, policy, resource, segment, connector, decision, and rollup tables.
+Cloud migration `017_ztna.sql` adds identity, trust, policy, resource, segment, connector, decision, and rollup tables.
 
 Controller migration `007_ztna.sql` adds local `ztna_policies`, `published_resources`, `device_trust`, `ztna_heartbeats`, and `connectors`.
 
@@ -53,4 +53,4 @@ Controller migration `007_ztna.sql` adds local `ztna_policies`, `published_resou
 
 ## DTOs
 
-Shared Phase 15 DTOs live in `WireSentinel/shared-types/src/phase15.rs`. Controller and Cloud integrations use compatible JSON shapes; WireSentinel-ZTNA crate DTO wiring is deferred until the standalone crate is populated.
+Shared Phase 15 DTOs live in `WireSentinel/shared-types/src/ztna.rs`. Controller and Cloud integrations use compatible JSON shapes; WireSentinel-ZTNA crate DTO wiring is deferred until the standalone crate is populated.

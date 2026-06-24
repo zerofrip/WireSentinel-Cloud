@@ -202,10 +202,7 @@ impl XdrFleetMonitor {
             critical_incidents: rollups.iter().map(|r| r.critical_incidents).sum(),
             total_detections: rollups.iter().map(|r| r.total_detections).sum(),
             active_hunts: rollups.iter().map(|r| r.active_hunts).sum(),
-            mitre_techniques_detected: rollups
-                .iter()
-                .map(|r| r.mitre_techniques_detected)
-                .sum(),
+            mitre_techniques_detected: rollups.iter().map(|r| r.mitre_techniques_detected).sum(),
             mitre_coverage_pct,
             avg_incident_mttr_hours,
             fleet_threat_score,
@@ -469,8 +466,7 @@ impl XdrFleetMonitor {
                         mitre_coverage_pct,
                         avg_incident_mttr_hours,
                         fleet_threat_score,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

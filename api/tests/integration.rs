@@ -1,28 +1,31 @@
 use auth::TeamRole;
 use billing::{CreateSubscriptionRequest, Plan, SubscriptionManager};
+use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
+use cloud_api::{build_router, AppState};
+use cloud_billing::BillingManager;
+use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
 use cloud_core::{
     AnonymityFleetMonitor, AnonymityRollupPayload, CloudMetricsAggregator, CloudSecurityPolicy,
     CreateOrganizationRequest, CreateTeamRequest, CreateTenantRequest, KernelFleetMonitor,
     KernelRollupPayload, OrganizationManager, TeamManager, TenantManager,
 };
-use cloud_api::{build_router, AppState};
-use cloud_billing::BillingManager;
+use cloud_ha::HaManager;
+use cloud_logging::LogAggregationService;
 use cloud_metering::UsageMeteringService;
+use cloud_observability::TelemetryPipeline;
 use cloud_provisioning::HostedControllerManager;
 use cloud_quotas::QuotaManager;
 use cloud_recovery::DisasterRecoveryManager;
 use cloud_regions::RegionManager;
-use cloud_ha::HaManager;
-use cloud_logging::LogAggregationService;
-use cloud_observability::TelemetryPipeline;
-use cloud_storage::BackupStorageService;
-use cloud_ztna::{CloudZtnaPolicyService, ResourcePublisher, TenantIdentityService, ZtnaFleetMonitor};
 use cloud_sse::{SseAnalyticsService, SseFleetMonitor, TenantSsePolicyService};
-use cloud_xdr::{XdrAnalyticsService, XdrFleetMonitor, TenantXdrPolicyService};
-use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
-use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
-use cloud_wiresock::{
-    WiresockAnalyticsService, WiresockFleetMonitor, TenantWiresockPolicyService,
+use cloud_storage::BackupStorageService;
+use cloud_vpn_gateway_compat::{
+    TenantVpnGatewayCompatPolicyService, VpnGatewayCompatAnalyticsService,
+    VpnGatewayCompatFleetMonitor,
+};
+use cloud_xdr::{TenantXdrPolicyService, XdrAnalyticsService, XdrFleetMonitor};
+use cloud_ztna::{
+    CloudZtnaPolicyService, ResourcePublisher, TenantIdentityService, ZtnaFleetMonitor,
 };
 use compliance::ComplianceEngine;
 use database::setup;
@@ -87,15 +90,19 @@ async fn spawn_test_server() -> (
         xdr_analytics: Arc::new(XdrAnalyticsService::new(XdrFleetMonitor::new(pool.clone()))),
         cnapp_fleet: Arc::new(CnappFleetMonitor::new(pool.clone())),
         cnapp_policies: Arc::new(TenantCnappPolicyService::new(pool.clone())),
-        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(pool.clone()))),
+        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(
+            pool.clone(),
+        ))),
         ai_fleet: Arc::new(AiFleetMonitor::new(pool.clone())),
         ai_policies: Arc::new(TenantAiPolicyService::new(pool.clone())),
         ai_analytics: Arc::new(AiAnalyticsService::new(AiFleetMonitor::new(pool.clone()))),
-        wiresock_fleet: Arc::new(WiresockFleetMonitor::new(pool.clone())),
-        wiresock_policies: Arc::new(TenantWiresockPolicyService::new(pool.clone())),
-        wiresock_analytics: Arc::new(WiresockAnalyticsService::new(WiresockFleetMonitor::new(
+        vpn_gateway_compat_fleet: Arc::new(VpnGatewayCompatFleetMonitor::new(pool.clone())),
+        vpn_gateway_compat_policies: Arc::new(TenantVpnGatewayCompatPolicyService::new(
             pool.clone(),
-        ))),
+        )),
+        vpn_gateway_compat_analytics: Arc::new(VpnGatewayCompatAnalyticsService::new(
+            VpnGatewayCompatFleetMonitor::new(pool.clone()),
+        )),
         subscriptions: Arc::new(SubscriptionManager::new(pool.clone())),
         billing,
         metering: Arc::new(UsageMeteringService::new(pool.clone())),
@@ -131,7 +138,11 @@ async fn login(base: &str, tenant_id: &str) -> String {
         .send()
         .await
         .expect("login");
-    assert!(resp.status().is_success(), "login failed: {}", resp.status());
+    assert!(
+        resp.status().is_success(),
+        "login failed: {}",
+        resp.status()
+    );
     let body: Value = resp.json().await.expect("json");
     body["token"].as_str().expect("token").to_string()
 }
@@ -331,15 +342,19 @@ async fn rbac_viewer_cannot_create_team() {
         xdr_analytics: Arc::new(XdrAnalyticsService::new(XdrFleetMonitor::new(pool.clone()))),
         cnapp_fleet: Arc::new(CnappFleetMonitor::new(pool.clone())),
         cnapp_policies: Arc::new(TenantCnappPolicyService::new(pool.clone())),
-        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(pool.clone()))),
+        cnapp_analytics: Arc::new(CnappAnalyticsService::new(CnappFleetMonitor::new(
+            pool.clone(),
+        ))),
         ai_fleet: Arc::new(AiFleetMonitor::new(pool.clone())),
         ai_policies: Arc::new(TenantAiPolicyService::new(pool.clone())),
         ai_analytics: Arc::new(AiAnalyticsService::new(AiFleetMonitor::new(pool.clone()))),
-        wiresock_fleet: Arc::new(WiresockFleetMonitor::new(pool.clone())),
-        wiresock_policies: Arc::new(TenantWiresockPolicyService::new(pool.clone())),
-        wiresock_analytics: Arc::new(WiresockAnalyticsService::new(WiresockFleetMonitor::new(
+        vpn_gateway_compat_fleet: Arc::new(VpnGatewayCompatFleetMonitor::new(pool.clone())),
+        vpn_gateway_compat_policies: Arc::new(TenantVpnGatewayCompatPolicyService::new(
             pool.clone(),
-        ))),
+        )),
+        vpn_gateway_compat_analytics: Arc::new(VpnGatewayCompatAnalyticsService::new(
+            VpnGatewayCompatFleetMonitor::new(pool.clone()),
+        )),
         subscriptions: Arc::new(SubscriptionManager::new(pool.clone())),
         billing: Arc::new(BillingManager::new(pool.clone())),
         metering: Arc::new(UsageMeteringService::new(pool.clone())),
@@ -354,7 +369,9 @@ async fn rbac_viewer_cannot_create_team() {
     };
 
     let app = build_router(state);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind");
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("bind");
     let base = format!("http://{}", listener.local_addr().unwrap());
     let handle = tokio::spawn(async move {
         axum::serve(listener, app).await.expect("serve");
@@ -713,15 +730,26 @@ async fn integration_logs_and_observability() {
 
 #[allow(dead_code)]
 fn _unused_imports() {
-    let _ = CreateOrganizationRequest { tenant_id: String::new(), name: String::new() };
-    let _ = CreateTeamRequest { tenant_id: String::new(), organization_id: None, name: String::new() };
+    let _ = CreateOrganizationRequest {
+        tenant_id: String::new(),
+        name: String::new(),
+    };
+    let _ = CreateTeamRequest {
+        tenant_id: String::new(),
+        organization_id: None,
+        name: String::new(),
+    };
     let _ = RegisterControllerRequest {
         tenant_id: String::new(),
         name: String::new(),
         endpoint_url: String::new(),
         api_key: String::new(),
     };
-    let _ = SyncPushRequest { tenant_id: String::new(), controller_id: None, entities: vec![] };
+    let _ = SyncPushRequest {
+        tenant_id: String::new(),
+        controller_id: None,
+        entities: vec![],
+    };
     let _ = SyncEntity {
         entity_type: String::new(),
         entity_id: String::new(),

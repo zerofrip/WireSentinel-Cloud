@@ -225,8 +225,7 @@ impl ZtnaFleetMonitor {
                         deny_count,
                         challenge_count,
                         published_resources,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

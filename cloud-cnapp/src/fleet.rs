@@ -556,8 +556,7 @@ impl CnappFleetMonitor {
                         attack_paths_detected,
                         multi_cloud_providers,
                         fleet_risk_score,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

@@ -36,7 +36,7 @@ SSE policy mutations are written to `audit_events` via `audit_sse_mutation`.
 
 ## Database
 
-Cloud migration `018_sse_phase16.sql` adds `sse_policies` and `cloud_sse_rollups`.
+Cloud migration `018_sse.sql` adds `sse_policies` and `cloud_sse_rollups`.
 
 Controller migration `008_sse.sql` adds local SSE policy, incident, threat, risk, UEBA, and telemetry tables.
 
@@ -49,4 +49,4 @@ Controller migration `008_sse.sql` adds local SSE policy, incident, threat, risk
 
 ## DTOs
 
-Shared Phase 16 DTOs are planned in `WireSentinel/shared-types/src/phase16.rs`. Controller and Cloud integrations use compatible JSON shapes until the standalone `WireSentinel-SSE` crate is populated.
+Shared Phase 16 DTOs are planned in `WireSentinel/shared-types/src/sse.rs`. Controller and Cloud integrations use compatible JSON shapes until the standalone `WireSentinel-SSE` crate is populated.

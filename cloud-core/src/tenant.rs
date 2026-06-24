@@ -131,11 +131,10 @@ impl TenantManager {
     }
 
     pub async fn is_active(&self, id: &str) -> Result<bool, DbError> {
-        let status: Option<(String,)> =
-            sqlx::query_as("SELECT status FROM tenants WHERE id = ?")
-                .bind(id)
-                .fetch_optional(&self.pool)
-                .await?;
+        let status: Option<(String,)> = sqlx::query_as("SELECT status FROM tenants WHERE id = ?")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
         Ok(status.map(|(s,)| s == "active").unwrap_or(false))
     }
 }

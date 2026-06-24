@@ -88,7 +88,8 @@ impl BillingManager {
         actor: Option<&str>,
     ) -> Result<Subscription, BillingError> {
         let sub = self.subscriptions.create(req.clone()).await?;
-        self.record_event(&sub.tenant_id, "subscription.created", &sub).await?;
+        self.record_event(&sub.tenant_id, "subscription.created", &sub)
+            .await?;
         write_audit_event(
             &self.pool,
             AuditWriteRequest {
@@ -105,7 +106,10 @@ impl BillingManager {
         Ok(sub)
     }
 
-    pub async fn list_invoices(&self, tenant_id: &str) -> Result<Vec<crate::invoices::Invoice>, DbError> {
+    pub async fn list_invoices(
+        &self,
+        tenant_id: &str,
+    ) -> Result<Vec<crate::invoices::Invoice>, DbError> {
         self.invoices.list_for_tenant(tenant_id).await
     }
 
@@ -133,8 +137,12 @@ impl BillingManager {
         signature: &str,
     ) -> Result<WebhookResult, BillingError> {
         if let Err(reason) = self.policy.validate_billing_webhook(signature) {
-            self.record_event_raw("system", "billing.security_violation", &serde_json::json!({ "reason": reason }))
-                .await?;
+            self.record_event_raw(
+                "system",
+                "billing.security_violation",
+                &serde_json::json!({ "reason": reason }),
+            )
+            .await?;
             return Err(BillingError::Security(reason));
         }
 
@@ -213,7 +221,10 @@ impl BillingManager {
                 .map_err(DbError::from)?;
             }
             if let Some(invoice_id) = &event.stripe_invoice_id {
-                let draft = self.invoices.create_draft(&tenant_id, Some(&sub.id), 0).await?;
+                let draft = self
+                    .invoices
+                    .create_draft(&tenant_id, Some(&sub.id), 0)
+                    .await?;
                 self.invoices.mark_paid(&draft.id, Some(invoice_id)).await?;
             }
             return Ok(Some(sub));

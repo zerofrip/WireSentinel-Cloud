@@ -48,9 +48,9 @@ import { AiRiskCenterPage } from "./pages/AiRiskCenter";
 import { AiReportsPage } from "./pages/AiReports";
 import { AiCompliancePage } from "./pages/AiCompliance";
 import { AiForecastingPage } from "./pages/AiForecasting";
-import { WiresockSplitTemplatesPage } from "./pages/WiresockSplitTemplates";
-import { WiresockTcpTerminationPage } from "./pages/WiresockTcpTermination";
-import { WiresockHandshakeProxyPage } from "./pages/WiresockHandshakeProxy";
+import { VpnGatewayCompatSplitTemplatesPage } from "./pages/VpnGatewayCompatSplitTemplates";
+import { VpnGatewayCompatTcpTerminationPage } from "./pages/VpnGatewayCompatTcpTermination";
+import { VpnGatewayCompatHandshakeProxyPage } from "./pages/VpnGatewayCompatHandshakeProxy";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -115,9 +115,12 @@ export function App() {
           <Route path="ai/reports" element={<AiReportsPage />} />
           <Route path="ai/compliance" element={<AiCompliancePage />} />
           <Route path="ai/forecasting" element={<AiForecastingPage />} />
-          <Route path="wiresock/split-templates" element={<WiresockSplitTemplatesPage />} />
-          <Route path="wiresock/tcp-termination" element={<WiresockTcpTerminationPage />} />
-          <Route path="wiresock/handshake-proxy" element={<WiresockHandshakeProxyPage />} />
+          <Route path="vpn-gateway-compat/split-templates" element={<VpnGatewayCompatSplitTemplatesPage />} />
+          <Route path="vpn-gateway-compat/tcp-termination" element={<VpnGatewayCompatTcpTerminationPage />} />
+          <Route path="vpn-gateway-compat/handshake-proxy" element={<VpnGatewayCompatHandshakeProxyPage />} />
+          <Route path="wiresock/split-templates" element={<Navigate to="/vpn-gateway-compat/split-templates" replace />} />
+          <Route path="wiresock/tcp-termination" element={<Navigate to="/vpn-gateway-compat/tcp-termination" replace />} />
+          <Route path="wiresock/handshake-proxy" element={<Navigate to="/vpn-gateway-compat/handshake-proxy" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

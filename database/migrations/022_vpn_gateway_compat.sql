@@ -1,4 +1,4 @@
--- Phase 18.5 WireSock cloud integration (18.5-L)
+-- VPN gateway compat cloud integration: split templates, TCP termination, handshake proxy
 
 CREATE TABLE IF NOT EXISTS tenant_wiresock_split_templates (
     id TEXT PRIMARY KEY NOT NULL,

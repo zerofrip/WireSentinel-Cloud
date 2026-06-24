@@ -148,14 +148,16 @@ impl UsageMeteringService {
         Ok(rows
             .into_iter()
             .map(
-                |(tenant_id, metric, period, total, peak, sample_count, updated_at)| UsageAggregate {
-                    tenant_id,
-                    metric,
-                    period,
-                    total,
-                    peak,
-                    sample_count,
-                    updated_at,
+                |(tenant_id, metric, period, total, peak, sample_count, updated_at)| {
+                    UsageAggregate {
+                        tenant_id,
+                        metric,
+                        period,
+                        total,
+                        peak,
+                        sample_count,
+                        updated_at,
+                    }
                 },
             )
             .collect())
@@ -209,9 +211,7 @@ impl UsageMeteringService {
         .fetch_optional(&self.pool)
         .await?;
 
-        let mrr_cents = plan_row
-            .map(|(plan,)| plan_mrr_cents(&plan))
-            .unwrap_or(0);
+        let mrr_cents = plan_row.map(|(plan,)| plan_mrr_cents(&plan)).unwrap_or(0);
 
         let bandwidth: (f64,) = sqlx::query_as(
             "SELECT COALESCE(SUM(total), 0) FROM usage_aggregates WHERE tenant_id = ? AND metric = 'bandwidth_bytes'",

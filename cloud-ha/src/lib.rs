@@ -89,7 +89,16 @@ impl HaManager {
         Ok(rows
             .into_iter()
             .map(
-                |(id, node_name, address, role, status, last_heartbeat_at, lease_expires_at, created_at)| {
+                |(
+                    id,
+                    node_name,
+                    address,
+                    role,
+                    status,
+                    last_heartbeat_at,
+                    lease_expires_at,
+                    created_at,
+                )| {
                     ClusterNode {
                         id,
                         node_name,
@@ -150,13 +159,11 @@ impl HaManager {
             .bind(node_id)
             .execute(&self.pool)
             .await?;
-        sqlx::query(
-            "UPDATE cluster_nodes SET role = 'leader', lease_expires_at = ? WHERE id = ?",
-        )
-        .bind(&expires)
-        .bind(node_id)
-        .execute(&self.pool)
-        .await?;
+        sqlx::query("UPDATE cluster_nodes SET role = 'leader', lease_expires_at = ? WHERE id = ?")
+            .bind(&expires)
+            .bind(node_id)
+            .execute(&self.pool)
+            .await?;
 
         if previous_leader.as_deref() != Some(node_id) {
             return Ok(Some(CloudEvent::FailoverTriggered(FailoverTriggered {
@@ -222,7 +229,16 @@ impl HaManager {
             .await?;
 
         row.map(
-            |(id, node_name, address, role, status, last_heartbeat_at, lease_expires_at, created_at)| {
+            |(
+                id,
+                node_name,
+                address,
+                role,
+                status,
+                last_heartbeat_at,
+                lease_expires_at,
+                created_at,
+            )| {
                 ClusterNode {
                     id,
                     node_name,

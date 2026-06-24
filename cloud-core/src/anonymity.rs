@@ -147,7 +147,10 @@ impl AnonymityFleetMonitor {
         })
     }
 
-    pub async fn privacy_analytics(&self, tenant_id: &str) -> Result<AnonymityPrivacyAnalytics, DbError> {
+    pub async fn privacy_analytics(
+        &self,
+        tenant_id: &str,
+    ) -> Result<AnonymityPrivacyAnalytics, DbError> {
         let rollups = self.list_rollups(tenant_id, Some(100)).await?;
         let rollups_recorded = rollups.len() as i64;
         let reporting_devices: i64 = rollups.iter().map(|r| r.reporting_devices).sum();
@@ -248,8 +251,7 @@ impl AnonymityFleetMonitor {
                         avg_entropy_bits,
                         avg_route_entropy,
                         total_active_routes,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }
@@ -297,7 +299,10 @@ mod tests {
 
         let overview = monitor.fleet_overview(&tenant.id).await.expect("overview");
         assert_eq!(overview.reporting_devices, 4);
-        let analytics = monitor.privacy_analytics(&tenant.id).await.expect("analytics");
+        let analytics = monitor
+            .privacy_analytics(&tenant.id)
+            .await
+            .expect("analytics");
         assert_eq!(analytics.avg_entropy_bits, 120.0);
     }
 }

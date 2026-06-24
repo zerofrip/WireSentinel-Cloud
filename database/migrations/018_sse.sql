@@ -1,4 +1,4 @@
--- Phase 16 SSE cloud integration (16-L)
+-- SSE cloud integration: policies and fleet rollups
 
 CREATE TABLE IF NOT EXISTS sse_policies (
     id TEXT PRIMARY KEY NOT NULL,

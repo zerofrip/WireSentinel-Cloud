@@ -1,4 +1,7 @@
-use database::{models::{now_iso, parse_iso}, DbError, DbPool};
+use database::{
+    models::{now_iso, parse_iso},
+    DbError, DbPool,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -155,20 +158,19 @@ impl CloudSyncEngine {
 
         Ok(rows
             .into_iter()
-            .map(|(entity_type, entity_id, payload, version, updated_at)| SyncEntity {
-                entity_type,
-                entity_id,
-                payload: serde_json::from_str(&payload).unwrap_or(serde_json::json!({})),
-                version,
-                updated_at,
-            })
+            .map(
+                |(entity_type, entity_id, payload, version, updated_at)| SyncEntity {
+                    entity_type,
+                    entity_id,
+                    payload: serde_json::from_str(&payload).unwrap_or(serde_json::json!({})),
+                    version,
+                    updated_at,
+                },
+            )
             .collect())
     }
 
-    pub async fn bidirectional(
-        &self,
-        req: SyncPushRequest,
-    ) -> Result<SyncPullResponse, DbError> {
+    pub async fn bidirectional(&self, req: SyncPushRequest) -> Result<SyncPullResponse, DbError> {
         self.push(req).await
     }
 
@@ -186,7 +188,9 @@ impl CloudSyncEngine {
         match self.default_resolution {
             ConflictResolution::NewestWins => {
                 let local_ts = parse_iso(local_updated).map(|t| t.timestamp()).unwrap_or(0);
-                let remote_ts = parse_iso(remote_updated).map(|t| t.timestamp()).unwrap_or(0);
+                let remote_ts = parse_iso(remote_updated)
+                    .map(|t| t.timestamp())
+                    .unwrap_or(0);
                 if local_ts == remote_ts {
                     return self
                         .record_conflict(
@@ -203,8 +207,8 @@ impl CloudSyncEngine {
                 }
                 Ok(None)
             }
-            ConflictResolution::Manual => {
-                self.record_conflict(
+            ConflictResolution::Manual => self
+                .record_conflict(
                     tenant_id,
                     controller_id,
                     entity_type,
@@ -214,8 +218,7 @@ impl CloudSyncEngine {
                     None,
                 )
                 .await
-                .map(Some)
-            }
+                .map(Some),
             _ => Ok(None),
         }
     }
@@ -232,8 +235,7 @@ impl CloudSyncEngine {
     ) -> Result<SyncConflict, DbError> {
         let id = Uuid::new_v4().to_string();
         let created_at = now_iso();
-        let remote_str =
-            serde_json::to_string(remote_payload).unwrap_or_else(|_| "{}".into());
+        let remote_str = serde_json::to_string(remote_payload).unwrap_or_else(|_| "{}".into());
 
         sqlx::query(
             "INSERT INTO sync_conflicts (id, tenant_id, controller_id, entity_type, entity_id, local_payload, remote_payload, resolution, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -324,15 +326,28 @@ impl CloudSyncEngine {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, controller_id, entity_type, entity_id, local_payload, remote_payload, resolution, resolved_at, created_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    controller_id,
+                    entity_type,
+                    entity_id,
+                    local_payload,
+                    remote_payload,
+                    resolution,
+                    resolved_at,
+                    created_at,
+                )| {
                     SyncConflict {
                         id,
                         tenant_id,
                         controller_id,
                         entity_type,
                         entity_id,
-                        local_payload: serde_json::from_str(&local_payload).unwrap_or(serde_json::json!({})),
-                        remote_payload: serde_json::from_str(&remote_payload).unwrap_or(serde_json::json!({})),
+                        local_payload: serde_json::from_str(&local_payload)
+                            .unwrap_or(serde_json::json!({})),
+                        remote_payload: serde_json::from_str(&remote_payload)
+                            .unwrap_or(serde_json::json!({})),
                         resolution,
                         resolved_at,
                         created_at,

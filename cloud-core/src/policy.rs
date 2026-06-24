@@ -115,6 +115,9 @@ pub async fn audit_ai_mutation(pool: &DbPool, req: AuditWriteRequest) -> Result<
 }
 
 /// Audit helper for Phase 18.5 WireSock split template/policy mutations.
-pub async fn audit_wiresock_mutation(pool: &DbPool, req: AuditWriteRequest) -> Result<(), DbError> {
+pub async fn audit_vpn_gateway_compat_mutation(
+    pool: &DbPool,
+    req: AuditWriteRequest,
+) -> Result<(), DbError> {
     write_audit_event(pool, req).await
 }

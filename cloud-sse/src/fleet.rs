@@ -200,8 +200,7 @@ impl SseFleetMonitor {
                         dlp_incidents,
                         avg_risk_score,
                         ueba_alerts,
-                        rollup: serde_json::from_str(&rollup_json)
-                            .unwrap_or(serde_json::json!({})),
+                        rollup: serde_json::from_str(&rollup_json).unwrap_or(serde_json::json!({})),
                         rolled_up_at,
                         created_at,
                     }

@@ -17,7 +17,11 @@ pub trait StripeBillingProvider: Send + Sync {
         cancel_url: &str,
     ) -> Result<StripeCheckout, String>;
 
-    async fn handle_webhook(&self, payload: &[u8], signature: &str) -> Result<StripeWebhookEvent, String>;
+    async fn handle_webhook(
+        &self,
+        payload: &[u8],
+        signature: &str,
+    ) -> Result<StripeWebhookEvent, String>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,7 +51,11 @@ impl StripeBillingProvider for StripeMockProvider {
         })
     }
 
-    async fn handle_webhook(&self, payload: &[u8], _signature: &str) -> Result<StripeWebhookEvent, String> {
+    async fn handle_webhook(
+        &self,
+        payload: &[u8],
+        _signature: &str,
+    ) -> Result<StripeWebhookEvent, String> {
         let value: serde_json::Value =
             serde_json::from_slice(payload).map_err(|e| e.to_string())?;
         Ok(StripeWebhookEvent {
@@ -122,10 +130,12 @@ impl StripeBillingProvider for StripeProvider {
                 price_data: Some(async_stripe::CreateCheckoutSessionLineItemsPriceData {
                     currency: Currency::USD,
                     unit_amount: Some(plan_price_cents(plan_id)),
-                    product_data: Some(async_stripe::CreateCheckoutSessionLineItemsPriceDataProductData {
-                        name: Some(plan_id.into()),
-                        ..Default::default()
-                    }),
+                    product_data: Some(
+                        async_stripe::CreateCheckoutSessionLineItemsPriceDataProductData {
+                            name: Some(plan_id.into()),
+                            ..Default::default()
+                        },
+                    ),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -147,15 +157,20 @@ impl StripeBillingProvider for StripeProvider {
         }
     }
 
-    async fn handle_webhook(&self, payload: &[u8], signature: &str) -> Result<StripeWebhookEvent, String> {
+    async fn handle_webhook(
+        &self,
+        payload: &[u8],
+        signature: &str,
+    ) -> Result<StripeWebhookEvent, String> {
         #[cfg(feature = "stripe")]
         {
             use async_stripe::{Client, Webhook};
 
-            let secret = std::env::var("STRIPE_WEBHOOK_SECRET").map_err(|_| "STRIPE_WEBHOOK_SECRET missing".to_string())?;
+            let secret = std::env::var("STRIPE_WEBHOOK_SECRET")
+                .map_err(|_| "STRIPE_WEBHOOK_SECRET missing".to_string())?;
             let _client = Client::new(self.secret_key.clone());
-            let event = Webhook::construct_event(payload, signature, &secret)
-                .map_err(|e| e.to_string())?;
+            let event =
+                Webhook::construct_event(payload, signature, &secret).map_err(|e| e.to_string())?;
 
             return Ok(StripeWebhookEvent {
                 event_type: event.type_.to_string(),

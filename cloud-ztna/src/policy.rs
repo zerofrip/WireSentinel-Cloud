@@ -112,8 +112,8 @@ impl CloudZtnaPolicyService {
         let enabled = req.enabled.unwrap_or(true);
         let min_trust_level = req.min_trust_level.unwrap_or_else(|| "medium".into());
         let min_trust_score = req.min_trust_score.unwrap_or(50);
-        let conditions_json =
-            serde_json::to_string(&req.conditions.unwrap_or_default()).unwrap_or_else(|_| "[]".into());
+        let conditions_json = serde_json::to_string(&req.conditions.unwrap_or_default())
+            .unwrap_or_else(|_| "[]".into());
         let default_action = req.default_action.unwrap_or_else(|| "deny".into());
 
         sqlx::query(

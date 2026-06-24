@@ -1,4 +1,6 @@
-use cloud_ztna::{CreatePublishedResourceRequest, ResourcePublisher, ZtnaFleetMonitor, ZtnaRollupPayload};
+use cloud_ztna::{
+    CreatePublishedResourceRequest, ResourcePublisher, ZtnaFleetMonitor, ZtnaRollupPayload,
+};
 use database::models::now_iso;
 
 async fn seed_tenant(pool: &database::DbPool) -> String {

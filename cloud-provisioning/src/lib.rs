@@ -68,7 +68,10 @@ impl HostedControllerManager {
         Self { pool }
     }
 
-    pub async fn provision(&self, req: ProvisionRequest) -> Result<(HostedController, ProvisioningJob), DbError> {
+    pub async fn provision(
+        &self,
+        req: ProvisionRequest,
+    ) -> Result<(HostedController, ProvisioningJob), DbError> {
         let controller_id = Uuid::new_v4().to_string();
         let now = now_iso();
         let endpoint = format!("https://{}.{}.wiresentinel.cloud", req.name, req.region_id);
@@ -110,7 +113,9 @@ impl HostedControllerManager {
     }
 
     pub async fn upgrade(&self, req: UpgradeRequest) -> Result<ProvisioningJob, DbError> {
-        let _ = self.get_controller(&req.tenant_id, &req.controller_id).await?;
+        let _ = self
+            .get_controller(&req.tenant_id, &req.controller_id)
+            .await?;
         let job = self
             .create_job(
                 &req.tenant_id,
@@ -140,7 +145,9 @@ impl HostedControllerManager {
     }
 
     pub async fn backup(&self, req: BackupRequest) -> Result<(ProvisioningJob, String), DbError> {
-        let controller = self.get_controller(&req.tenant_id, &req.controller_id).await?;
+        let controller = self
+            .get_controller(&req.tenant_id, &req.controller_id)
+            .await?;
         let snapshot_id = Uuid::new_v4().to_string();
         let storage_key = format!("{}/{}", req.controller_id, snapshot_id);
         let now = now_iso();
@@ -171,7 +178,9 @@ impl HostedControllerManager {
     }
 
     pub async fn restore(&self, req: RestoreRequest) -> Result<ProvisioningJob, DbError> {
-        let _ = self.get_controller(&req.tenant_id, &req.controller_id).await?;
+        let _ = self
+            .get_controller(&req.tenant_id, &req.controller_id)
+            .await?;
         let job = self
             .create_job(
                 &req.tenant_id,
@@ -186,7 +195,10 @@ impl HostedControllerManager {
         Ok(job)
     }
 
-    pub async fn list_controllers(&self, tenant_id: &str) -> Result<Vec<HostedController>, DbError> {
+    pub async fn list_controllers(
+        &self,
+        tenant_id: &str,
+    ) -> Result<Vec<HostedController>, DbError> {
         let rows: Vec<(String, String, String, String, String, String, Option<String>, Option<String>, String, String)> =
             sqlx::query_as(
                 "SELECT id, tenant_id, name, region_id, plan_tier, status, endpoint_url, version, created_at, updated_at FROM hosted_controllers WHERE tenant_id = ? ORDER BY created_at DESC",
@@ -198,7 +210,18 @@ impl HostedControllerManager {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, name, region_id, plan_tier, status, endpoint_url, version, created_at, updated_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    name,
+                    region_id,
+                    plan_tier,
+                    status,
+                    endpoint_url,
+                    version,
+                    created_at,
+                    updated_at,
+                )| {
                     HostedController {
                         id,
                         tenant_id,
@@ -226,8 +249,18 @@ impl HostedControllerManager {
             .fetch_optional(&self.pool)
             .await?;
 
-        let (id, tenant_id, name, region_id, plan_tier, status, endpoint_url, version, created_at, updated_at) =
-            row.ok_or_else(|| DbError::NotFound(format!("hosted controller {id}")))?;
+        let (
+            id,
+            tenant_id,
+            name,
+            region_id,
+            plan_tier,
+            status,
+            endpoint_url,
+            version,
+            created_at,
+            updated_at,
+        ) = row.ok_or_else(|| DbError::NotFound(format!("hosted controller {id}")))?;
 
         Ok(HostedController {
             id,

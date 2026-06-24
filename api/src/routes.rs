@@ -1,44 +1,45 @@
 use auth::{LoginRequest, TeamRole};
 use axum::{
+    extract::Query,
     extract::{Path, State},
     http::{header, HeaderMap, StatusCode},
     middleware,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
-    extract::Query,
     Json, Router,
 };
 use billing::{CreateSubscriptionRequest, Plan, SubscriptionManager};
+use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
 use cloud_billing::BillingManager;
+use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
 use cloud_core::{
-    write_audit_event, AssignDeviceRequest, AssignPolicyRequest, AnonymityFleetMonitor,
+    write_audit_event, AnonymityFleetMonitor, AssignDeviceRequest, AssignPolicyRequest,
     AuditWriteRequest, CloudMetricsAggregator, CreateOrganizationRequest, CreateTeamRequest,
     CreateTenantRequest, KernelFleetMonitor, OrganizationManager, TeamManager,
     TeamMembershipRequest, TenantManager,
 };
+use cloud_ha::{HaManager, RegisterNodeRequest};
+use cloud_logging::{LogAggregationService, LogSearchQuery};
 use cloud_metering::{RecordUsageRequest, UsageMeteringService, UsageMetric};
+use cloud_observability::TelemetryPipeline;
 use cloud_provisioning::{
     BackupRequest, HostedControllerManager, ProvisionRequest, RestoreRequest, UpgradeRequest,
 };
 use cloud_quotas::{QuotaManager, SetQuotaRequest};
 use cloud_recovery::{DisasterRecoveryManager, RunRecoveryRequest};
-use cloud_ha::{HaManager, RegisterNodeRequest};
-use cloud_logging::{LogAggregationService, LogSearchQuery};
-use cloud_observability::TelemetryPipeline;
 use cloud_regions::RegionManager;
-use cloud_storage::{BackupStorageService, StorageError, UploadBackupRequest};
-use cloud_ztna::{
-    CloudZtnaPolicyService, CreateIdentityProviderRequest, CreatePublishedResourceRequest,
-    ResourcePublisher, TenantIdentityService, UpdatePublishedResourceRequest, ZtnaFleetMonitor,
-};
 use cloud_sse::{
     CreateSsePolicyRequest, SseAnalyticsService, SseFleetMonitor, TenantSsePolicyService,
 };
-use cloud_xdr::{XdrAnalyticsService, XdrFleetMonitor, TenantXdrPolicyService};
-use cloud_cnapp::{CnappAnalyticsService, CnappFleetMonitor, TenantCnappPolicyService};
-use cloud_ai::{AiAnalyticsService, AiFleetMonitor, TenantAiPolicyService};
-use cloud_wiresock::{
-    WiresockAnalyticsService, WiresockFleetMonitor, TenantWiresockPolicyService,
+use cloud_storage::{BackupStorageService, StorageError, UploadBackupRequest};
+use cloud_vpn_gateway_compat::{
+    TenantVpnGatewayCompatPolicyService, VpnGatewayCompatAnalyticsService,
+    VpnGatewayCompatFleetMonitor,
+};
+use cloud_xdr::{TenantXdrPolicyService, XdrAnalyticsService, XdrFleetMonitor};
+use cloud_ztna::{
+    CloudZtnaPolicyService, CreateIdentityProviderRequest, CreatePublishedResourceRequest,
+    ResourcePublisher, TenantIdentityService, UpdatePublishedResourceRequest, ZtnaFleetMonitor,
 };
 use compliance::ComplianceEngine;
 use database::DbPool;
@@ -82,9 +83,9 @@ pub struct AppState {
     pub ai_fleet: Arc<AiFleetMonitor>,
     pub ai_policies: Arc<TenantAiPolicyService>,
     pub ai_analytics: Arc<AiAnalyticsService>,
-    pub wiresock_fleet: Arc<WiresockFleetMonitor>,
-    pub wiresock_policies: Arc<TenantWiresockPolicyService>,
-    pub wiresock_analytics: Arc<WiresockAnalyticsService>,
+    pub vpn_gateway_compat_fleet: Arc<VpnGatewayCompatFleetMonitor>,
+    pub vpn_gateway_compat_policies: Arc<TenantVpnGatewayCompatPolicyService>,
+    pub vpn_gateway_compat_analytics: Arc<VpnGatewayCompatAnalyticsService>,
     pub subscriptions: Arc<SubscriptionManager>,
     pub billing: Arc<BillingManager>,
     pub metering: Arc<UsageMeteringService>,
@@ -110,15 +111,33 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/auth/me", get(me))
         .route("/api/v1/tenants", get(list_tenants).post(create_tenant))
         .route("/api/v1/tenants/{id}", get(get_tenant))
-        .route("/api/v1/organizations", get(list_organizations).post(create_organization))
+        .route(
+            "/api/v1/organizations",
+            get(list_organizations).post(create_organization),
+        )
         .route("/api/v1/teams", get(list_teams).post(create_team))
-        .route("/api/v1/teams/{id}/members", get(list_team_members).post(add_team_member))
+        .route(
+            "/api/v1/teams/{id}/members",
+            get(list_team_members).post(add_team_member),
+        )
         .route("/api/v1/teams/{id}/devices", post(assign_team_device))
         .route("/api/v1/teams/{id}/policies", post(assign_team_policy))
-        .route("/api/v1/federation/controllers", get(list_controllers).post(register_controller))
-        .route("/api/v1/federation/controllers/{id}/revoke", post(revoke_controller))
-        .route("/api/v1/federation/controllers/{id}/sync", post(sync_controller))
-        .route("/api/v1/federation/controllers/{id}/health", post(health_controller))
+        .route(
+            "/api/v1/federation/controllers",
+            get(list_controllers).post(register_controller),
+        )
+        .route(
+            "/api/v1/federation/controllers/{id}/revoke",
+            post(revoke_controller),
+        )
+        .route(
+            "/api/v1/federation/controllers/{id}/sync",
+            post(sync_controller),
+        )
+        .route(
+            "/api/v1/federation/controllers/{id}/health",
+            post(health_controller),
+        )
         .route("/api/v1/cloud/sync", get(get_sync).post(post_sync))
         .route(
             "/api/v1/tenants/{tenant_id}/devices/{device_id}/sync/push",
@@ -128,51 +147,101 @@ pub fn build_router(state: AppState) -> Router {
             "/api/v1/tenants/{tenant_id}/devices/{device_id}/sync/pull",
             get(device_sync_pull),
         )
-        .route("/api/v1/compliance", get(list_compliance).post(run_compliance))
+        .route(
+            "/api/v1/compliance",
+            get(list_compliance).post(run_compliance),
+        )
         .route("/api/v1/cloud/metrics", get(get_metrics))
         .route("/api/v1/cloud/kernel", get(get_cloud_kernel))
-        .route("/api/v1/cloud/kernel/statistics", get(get_cloud_kernel_statistics))
+        .route(
+            "/api/v1/cloud/kernel/statistics",
+            get(get_cloud_kernel_statistics),
+        )
         .route("/api/v1/cloud/anonymity", get(get_cloud_anonymity))
-        .route("/api/v1/cloud/anonymity/analytics", get(get_cloud_anonymity_analytics))
+        .route(
+            "/api/v1/cloud/anonymity/analytics",
+            get(get_cloud_anonymity_analytics),
+        )
         .route("/api/v1/cloud/ztna", get(get_cloud_ztna))
-        .route("/api/v1/cloud/ztna/analytics", get(get_cloud_ztna_analytics))
+        .route(
+            "/api/v1/cloud/ztna/analytics",
+            get(get_cloud_ztna_analytics),
+        )
         .route("/api/v1/cloud/sse", get(get_cloud_sse))
         .route("/api/v1/cloud/sse/analytics", get(get_cloud_sse_analytics))
         .route("/api/v1/cloud/xdr", get(get_cloud_xdr))
         .route("/api/v1/cloud/xdr/analytics", get(get_cloud_xdr_analytics))
         .route("/api/v1/cloud/xdr/incidents", get(get_cloud_xdr_incidents))
-        .route("/api/v1/cloud/xdr/detections", get(get_cloud_xdr_detections))
-        .route("/api/v1/cloud/xdr/mitre-coverage", get(get_cloud_xdr_mitre_coverage))
+        .route(
+            "/api/v1/cloud/xdr/detections",
+            get(get_cloud_xdr_detections),
+        )
+        .route(
+            "/api/v1/cloud/xdr/mitre-coverage",
+            get(get_cloud_xdr_mitre_coverage),
+        )
         .route("/api/v1/cloud/cnapp", get(get_cloud_cnapp))
         .route("/api/v1/cloud/cnapp/posture", get(get_cloud_cnapp_posture))
-        .route("/api/v1/cloud/cnapp/compliance", get(get_cloud_cnapp_compliance))
-        .route("/api/v1/cloud/cnapp/vulnerabilities", get(get_cloud_cnapp_vulnerabilities))
-        .route("/api/v1/cloud/cnapp/analytics", get(get_cloud_cnapp_analytics))
+        .route(
+            "/api/v1/cloud/cnapp/compliance",
+            get(get_cloud_cnapp_compliance),
+        )
+        .route(
+            "/api/v1/cloud/cnapp/vulnerabilities",
+            get(get_cloud_cnapp_vulnerabilities),
+        )
+        .route(
+            "/api/v1/cloud/cnapp/analytics",
+            get(get_cloud_cnapp_analytics),
+        )
         .route("/api/v1/cloud/ai", get(get_cloud_ai))
         .route("/api/v1/cloud/ai/risk", get(get_cloud_ai_risk))
         .route("/api/v1/cloud/ai/reports", get(get_cloud_ai_reports))
-        .route("/api/v1/cloud/ai/investigations", get(get_cloud_ai_investigations))
+        .route(
+            "/api/v1/cloud/ai/investigations",
+            get(get_cloud_ai_investigations),
+        )
         .route("/api/v1/cloud/ai/analytics", get(get_cloud_ai_analytics))
-        .route("/api/v1/cloud/split-templates", get(get_cloud_split_templates))
-        .route("/api/v1/cloud/tcp-termination", get(get_cloud_tcp_termination))
-        .route("/api/v1/cloud/handshake-proxy", get(get_cloud_handshake_proxy))
-        .route("/api/v1/sse/policies", get(list_sse_policies).post(create_sse_policy))
+        .route(
+            "/api/v1/cloud/split-templates",
+            get(get_cloud_split_templates),
+        )
+        .route(
+            "/api/v1/cloud/tcp-termination",
+            get(get_cloud_tcp_termination),
+        )
+        .route(
+            "/api/v1/cloud/handshake-proxy",
+            get(get_cloud_handshake_proxy),
+        )
+        .route(
+            "/api/v1/sse/policies",
+            get(list_sse_policies).post(create_sse_policy),
+        )
         .route(
             "/api/v1/identity/providers",
             get(list_identity_providers).post(create_identity_provider),
         )
         .route(
             "/api/v1/resources",
-            get(list_published_resources)
-                .post(create_published_resource),
+            get(list_published_resources).post(create_published_resource),
         )
         .route(
             "/api/v1/resources/{id}",
             put(update_published_resource).delete(delete_published_resource),
         )
-        .route("/api/v1/subscriptions", get(list_subscriptions).post(create_subscription))
-        .route("/api/v1/billing/plans", get(list_billing_plans).post(seed_billing_plans))
-        .route("/api/v1/billing/subscription", get(get_billing_subscription).post(create_billing_subscription))
+        .route(
+            "/api/v1/subscriptions",
+            get(list_subscriptions).post(create_subscription),
+        )
+        .route(
+            "/api/v1/billing/plans",
+            get(list_billing_plans).post(seed_billing_plans),
+        )
+        .route(
+            "/api/v1/billing/subscription",
+            get(get_billing_subscription).post(create_billing_subscription),
+        )
         .route("/api/v1/billing/invoices", get(list_billing_invoices))
         .route("/api/v1/billing/checkout", post(billing_checkout))
         .route("/api/v1/quotas", get(get_quotas).put(update_quotas))
@@ -192,17 +261,31 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/cloud/logs", post(ingest_cloud_logs))
         .route("/api/v1/logs", get(list_logs))
         .route("/api/v1/logs/search", get(search_logs))
-        .route("/api/v1/observability/metrics", get(get_observability_metrics))
-        .route("/api/v1/ha/nodes", get(list_ha_nodes).post(register_ha_node))
+        .route(
+            "/api/v1/observability/metrics",
+            get(get_observability_metrics),
+        )
+        .route(
+            "/api/v1/ha/nodes",
+            get(list_ha_nodes).post(register_ha_node),
+        )
         .route("/api/v1/ha/nodes/{id}/heartbeat", post(ha_heartbeat))
         .route("/api/v1/ha/leader", get(get_ha_leader))
-        .layer(middleware::from_fn_with_state(state.clone(), auth_mw::require_auth));
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_mw::require_auth,
+        ));
 
     Router::new()
         .merge(public)
         .merge(protected)
         .with_state(state)
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
         .layer(TraceLayer::new_for_http())
 }
 
@@ -300,7 +383,10 @@ async fn create_team(
     Json(body): Json<CreateTeamBody>,
 ) -> Result<(StatusCode, Json<cloud_core::Team>), ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Operator)?;
-    state.subscriptions.enforce_team_quota(&auth.tenant_id).await?;
+    state
+        .subscriptions
+        .enforce_team_quota(&auth.tenant_id)
+        .await?;
     let team = state
         .teams
         .create(CreateTeamRequest {
@@ -324,9 +410,7 @@ async fn list_team_members(
     Path(id): Path<String>,
 ) -> Result<Json<Vec<cloud_core::TeamMember>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(
-        state.teams.list_members(&auth.tenant_id, &id).await?,
-    ))
+    Ok(Json(state.teams.list_members(&auth.tenant_id, &id).await?))
 }
 
 async fn add_team_member(
@@ -336,10 +420,7 @@ async fn add_team_member(
     Json(req): Json<TeamMembershipRequest>,
 ) -> Result<(StatusCode, Json<cloud_core::TeamMember>), ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Administrator)?;
-    let member = state
-        .teams
-        .add_member(&auth.tenant_id, &id, req)
-        .await?;
+    let member = state.teams.add_member(&auth.tenant_id, &id, req).await?;
     Ok((StatusCode::CREATED, Json(member)))
 }
 
@@ -350,10 +431,7 @@ async fn assign_team_device(
     Json(req): Json<AssignDeviceRequest>,
 ) -> Result<StatusCode, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Operator)?;
-    state
-        .teams
-        .assign_device(&auth.tenant_id, &id, req)
-        .await?;
+    state.teams.assign_device(&auth.tenant_id, &id, req).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -364,10 +442,7 @@ async fn assign_team_policy(
     Json(req): Json<AssignPolicyRequest>,
 ) -> Result<StatusCode, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Operator)?;
-    state
-        .teams
-        .assign_policy(&auth.tenant_id, &id, req)
-        .await?;
+    state.teams.assign_policy(&auth.tenant_id, &id, req).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -429,9 +504,7 @@ async fn sync_controller(
     Path(id): Path<String>,
 ) -> Result<Json<federation::FederationEvent>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Operator)?;
-    Ok(Json(
-        state.federation.sync(&auth.tenant_id, &id).await?,
-    ))
+    Ok(Json(state.federation.sync(&auth.tenant_id, &id).await?))
 }
 
 async fn health_controller(
@@ -536,9 +609,7 @@ async fn run_compliance(
     auth: AuthUser,
 ) -> Result<Json<Vec<compliance::ComplianceReport>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Operator)?;
-    Ok(Json(
-        state.compliance.run_checks(&auth.tenant_id).await?,
-    ))
+    Ok(Json(state.compliance.run_checks(&auth.tenant_id).await?))
 }
 
 async fn get_metrics(
@@ -572,7 +643,9 @@ async fn get_cloud_kernel(
     auth: AuthUser,
 ) -> Result<Json<cloud_core::KernelFleetOverview>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(state.kernel_fleet.fleet_overview(&auth.tenant_id).await?))
+    Ok(Json(
+        state.kernel_fleet.fleet_overview(&auth.tenant_id).await?,
+    ))
 }
 
 async fn get_cloud_kernel_statistics(
@@ -588,7 +661,12 @@ async fn get_cloud_anonymity(
     auth: AuthUser,
 ) -> Result<Json<cloud_core::AnonymityFleetOverview>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(state.anonymity_fleet.fleet_overview(&auth.tenant_id).await?))
+    Ok(Json(
+        state
+            .anonymity_fleet
+            .fleet_overview(&auth.tenant_id)
+            .await?,
+    ))
 }
 
 async fn get_cloud_anonymity_analytics(
@@ -609,7 +687,9 @@ async fn get_cloud_ztna(
     auth: AuthUser,
 ) -> Result<Json<cloud_ztna::ZtnaFleetOverview>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(state.ztna_fleet.fleet_overview(&auth.tenant_id).await?))
+    Ok(Json(
+        state.ztna_fleet.fleet_overview(&auth.tenant_id).await?,
+    ))
 }
 
 async fn get_cloud_ztna_analytics(
@@ -684,10 +764,7 @@ async fn get_cloud_xdr_mitre_coverage(
 ) -> Result<Json<Vec<cloud_xdr::XdrMitreCoverageRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
-        state
-            .xdr_fleet
-            .list_mitre_coverage(&auth.tenant_id)
-            .await?,
+        state.xdr_fleet.list_mitre_coverage(&auth.tenant_id).await?,
     ))
 }
 
@@ -696,7 +773,9 @@ async fn get_cloud_cnapp(
     auth: AuthUser,
 ) -> Result<Json<cloud_cnapp::CnappFleetOverview>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(state.cnapp_fleet.fleet_overview(&auth.tenant_id).await?))
+    Ok(Json(
+        state.cnapp_fleet.fleet_overview(&auth.tenant_id).await?,
+    ))
 }
 
 async fn get_cloud_cnapp_posture(
@@ -743,7 +822,9 @@ async fn get_cloud_cnapp_analytics(
     auth: AuthUser,
 ) -> Result<Json<cloud_cnapp::CnappAnalyticsSummary>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(state.cnapp_analytics.analytics(&auth.tenant_id).await?))
+    Ok(Json(
+        state.cnapp_analytics.analytics(&auth.tenant_id).await?,
+    ))
 }
 
 async fn get_cloud_ai(
@@ -759,12 +840,7 @@ async fn get_cloud_ai_risk(
     auth: AuthUser,
 ) -> Result<Json<Vec<cloud_ai::AiRiskRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(
-        state
-            .ai_fleet
-            .list_risk(&auth.tenant_id, None)
-            .await?,
-    ))
+    Ok(Json(state.ai_fleet.list_risk(&auth.tenant_id, None).await?))
 }
 
 async fn get_cloud_ai_reports(
@@ -773,10 +849,7 @@ async fn get_cloud_ai_reports(
 ) -> Result<Json<Vec<cloud_ai::AiReportRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
-        state
-            .ai_fleet
-            .list_reports(&auth.tenant_id, None)
-            .await?,
+        state.ai_fleet.list_reports(&auth.tenant_id, None).await?,
     ))
 }
 
@@ -804,11 +877,11 @@ async fn get_cloud_ai_analytics(
 async fn get_cloud_split_templates(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<cloud_wiresock::WiresockFleetOverview>, ApiError> {
+) -> Result<Json<cloud_vpn_gateway_compat::VpnGatewayCompatFleetOverview>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
         state
-            .wiresock_fleet
+            .vpn_gateway_compat_fleet
             .fleet_overview(&auth.tenant_id)
             .await?,
     ))
@@ -817,11 +890,11 @@ async fn get_cloud_split_templates(
 async fn get_cloud_tcp_termination(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<Vec<cloud_wiresock::WiresockTcpTerminationRecord>>, ApiError> {
+) -> Result<Json<Vec<cloud_vpn_gateway_compat::VpnGatewayCompatTcpTerminationRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
         state
-            .wiresock_fleet
+            .vpn_gateway_compat_fleet
             .list_tcp_termination(&auth.tenant_id, None)
             .await?,
     ))
@@ -830,11 +903,11 @@ async fn get_cloud_tcp_termination(
 async fn get_cloud_handshake_proxy(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<Vec<cloud_wiresock::WiresockHandshakeProxyRecord>>, ApiError> {
+) -> Result<Json<Vec<cloud_vpn_gateway_compat::VpnGatewayCompatHandshakeProxyRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
         state
-            .wiresock_fleet
+            .vpn_gateway_compat_fleet
             .list_handshake_proxy(&auth.tenant_id, None)
             .await?,
     ))
@@ -867,10 +940,7 @@ async fn list_identity_providers(
 ) -> Result<Json<Vec<cloud_ztna::IdentityProviderRecord>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     Ok(Json(
-        state
-            .ztna_identity
-            .list_providers(&auth.tenant_id)
-            .await?,
+        state.ztna_identity.list_providers(&auth.tenant_id).await?,
     ))
 }
 
@@ -941,9 +1011,7 @@ async fn list_subscriptions(
     auth: AuthUser,
 ) -> Result<Json<Vec<billing::Subscription>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(
-        state.subscriptions.list(&auth.tenant_id).await?,
-    ))
+    Ok(Json(state.subscriptions.list(&auth.tenant_id).await?))
 }
 
 #[derive(Deserialize)]
@@ -1114,7 +1182,10 @@ async fn provision_controller(
     Json(body): Json<ProvisionBody>,
 ) -> Result<(StatusCode, Json<ProvisionResponse>), ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Administrator)?;
-    state.quotas.enforce_controller_quota(&auth.tenant_id).await?;
+    state
+        .quotas
+        .enforce_controller_quota(&auth.tenant_id)
+        .await?;
     let (controller, job) = state
         .provisioning
         .provision(ProvisionRequest {
@@ -1124,7 +1195,10 @@ async fn provision_controller(
             plan_tier: body.plan_tier,
         })
         .await?;
-    Ok((StatusCode::CREATED, Json(ProvisionResponse { controller, job })))
+    Ok((
+        StatusCode::CREATED,
+        Json(ProvisionResponse { controller, job }),
+    ))
 }
 
 #[derive(Serialize)]
@@ -1340,9 +1414,7 @@ async fn list_usage(
     auth: AuthUser,
 ) -> Result<Json<Vec<cloud_metering::UsageAggregate>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(
-        state.metering.list_aggregates(&auth.tenant_id).await?,
-    ))
+    Ok(Json(state.metering.list_aggregates(&auth.tenant_id).await?))
 }
 
 async fn ingest_usage(
@@ -1428,9 +1500,7 @@ async fn list_logs(
 ) -> Result<Json<Vec<cloud_logging::AggregatedLogEntry>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
     let limit = params.limit.unwrap_or(100).clamp(1, 500);
-    Ok(Json(
-        state.logging.list(&auth.tenant_id, limit).await?,
-    ))
+    Ok(Json(state.logging.list(&auth.tenant_id, limit).await?))
 }
 
 #[derive(Deserialize)]
@@ -1444,9 +1514,7 @@ async fn search_logs(
     Query(params): Query<LogSearchQuery>,
 ) -> Result<Json<Vec<cloud_logging::AggregatedLogEntry>>, ApiError> {
     auth_mw::require_role(&auth.claims, TeamRole::Viewer)?;
-    Ok(Json(
-        state.logging.search(&auth.tenant_id, params).await?,
-    ))
+    Ok(Json(state.logging.search(&auth.tenant_id, params).await?))
 }
 
 async fn get_observability_metrics(

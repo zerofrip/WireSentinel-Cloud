@@ -56,7 +56,16 @@ impl TenantIdentityService {
         Ok(rows
             .into_iter()
             .map(
-                |(id, tenant_id, name, provider_kind, config_json, enabled, created_at, updated_at)| {
+                |(
+                    id,
+                    tenant_id,
+                    name,
+                    provider_kind,
+                    config_json,
+                    enabled,
+                    created_at,
+                    updated_at,
+                )| {
                     IdentityProviderRecord {
                         id,
                         tenant_id,
